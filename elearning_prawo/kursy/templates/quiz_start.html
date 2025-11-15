@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Quiz</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% for p in pytania %}
+            <div class="mb-3">
+                <p><strong>{{ forloop.counter }}. {{ p.tresc }}</strong></p>
+                {% for o in p.odpowiedzi %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="p{{ p.id }}" id="o{{ o.id }}" value="{{ o.id }}">
+                        <label class="form-check-label" for="o{{ o.id }}">
+                            {{ o.tresc }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-success">Zakończ Quiz</button>
+    </form>
+</div>
+{% endblock %}
