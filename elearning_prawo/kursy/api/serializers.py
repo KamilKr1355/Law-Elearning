@@ -4,10 +4,7 @@ from rest_framework_simplejwt.tokens  import RefreshToken # type: ignore
 from django.contrib.auth.models import User
 from kursy.models import Kurs
 
-class CosSerializer(ModelSerializer):
-    class Meta:
-        model = Kurs
-        fields = '__all__'
+
 
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField(read_only = True)
@@ -36,3 +33,40 @@ class UserSerializerWithToken(UserSerializer):
     def get_token(self,obj):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
+    
+class KursSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    nazwa_kursu = serializers.CharField(max_length=50,required=True)
+
+    def validate_nazwa_kursu(self, value):
+        if value is None or value.strip() == "":
+            raise serializers.ValidationError("Nazwa kursu nie może być pusta!")
+        return value
+    
+class ArtykulSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField(required=True,allow_blank=False)
+    nazwa_kursu = serializers.CharField(max_length=50,required=True)
+    id_kursu = serializers.IntegerField(required=True)
+
+class PytanieSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField(required=True,allow_blank=False)
+
+class OdpowiedzSerializer(serializers.Serializer):
+    text = serializers.CharField(allow_blank=False)
+    correct = serializers.BooleanField(required=True)
+
+class QuizSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField()
+    odpowiedzi = OdpowiedzSerializer(many=True)
+
+    def validate_odpowiedzi(self,value):
+        if not any(o['correct'] for o in value):
+            raise serializers.ValidationError("Musi byc przynajmniej 1 poprawna odpowiedz")
+        return value
+    
+class SprawdzOdpowiedzSerializer(serializers.Serializer):
+    pytanie_id = serializers.IntegerField()
+    wybrana_opcja = serializers.CharField()
