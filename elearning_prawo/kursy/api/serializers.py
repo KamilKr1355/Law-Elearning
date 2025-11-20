@@ -46,8 +46,15 @@ class KursSerializer(serializers.Serializer):
 class ArtykulSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     tresc = serializers.CharField(required=True,allow_blank=False)
+    tytul = serializers.CharField(max_length=50,required=True)
+    nr_artykulu = serializers.CharField(max_length=10)
+    rozdzial_id = serializers.IntegerField(required=False)
+
+class ArtykulViewSerializer(serializers.Serializer):
+    artykul_id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField(required=True,allow_blank=False)
     nazwa_kursu = serializers.CharField(max_length=50,required=True)
-    id_kursu = serializers.IntegerField(required=True)
+    id = serializers.IntegerField()
 
 class PytanieSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -70,3 +77,8 @@ class QuizSerializer(serializers.Serializer):
 class SprawdzOdpowiedzSerializer(serializers.Serializer):
     pytanie_id = serializers.IntegerField()
     wybrana_opcja = serializers.CharField()
+
+class RozdzialSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    nazwa_rozdzialu = serializers.CharField()
+    kurs_id = serializers.IntegerField()
