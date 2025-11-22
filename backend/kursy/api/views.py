@@ -4,17 +4,19 @@ from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from rest_framework import status
 from .serializers import(KursSerializer,ArtykulViewSerializer,
                          ArtykulSerializer,
-                         RozdzialSerializer)
+                         RozdzialSerializer,PytaniaSerializer)
 from rest_framework.views import APIView
 from kursy.services.kurs_service import KursService
 from kursy.services.artykul_service import ArtykulService
 from kursy.services.rozdzial_service import RozdzialService
-
+from kursy.services.pytanie_service import PytaniaService
+from drf_yasg.utils import swagger_auto_schema
 
 
 class KursyAPIView(APIView):
 
     service = KursService()
+    serializer_class = KursSerializer
 
     def get_permissions(self):
         if self.request.method in ["POST", "PUT", "DELETE"]:
@@ -33,6 +35,7 @@ class KursyAPIView(APIView):
             return Response({"error": "Nie znaleziono kursu"}, status=404)
         return Response(KursSerializer(kursy, many=True).data)
 
+    @swagger_auto_schema(request_body=KursSerializer)
     def post(self, request):
         serializer = KursSerializer(data=request.data)
         if serializer.is_valid():
@@ -41,6 +44,7 @@ class KursyAPIView(APIView):
             return Response(KursSerializer(kurs).data, status=201)
         return Response(serializer.errors, status=400)
 
+    @swagger_auto_schema(request_body=KursSerializer)
     def put(self, request, id):
         serializer = KursSerializer(data=request.data)
         if serializer.is_valid():
@@ -163,6 +167,7 @@ class RozdzialyListaAPIView(APIView):
 
 
 class RozdzialSzczegolyAPIView(APIView):
+
     service = RozdzialService()
 
     def get_permissions(self):
@@ -220,7 +225,67 @@ class RozdzialSzczegolyAPIView(APIView):
             status=status.HTTP_404_NOT_FOUND
         )
             
+class PytaniaAPIview(APIView):
+    service = PytaniaService()
 
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+
+    def get(self, request):
+        pytania = self.service.list_all()
+        return Response(PytaniaSerializer(pytania, many=True).data)
+
+    def post(self, request):
+        serializer = PytaniaSerializer(data=request.data)
+        if serializer.is_valid():
+            tresc = serializer.validated_data["tresc"]
+            artykul_id = serializer.validated_data["artykul_id"]
+
+            pytanie = self.service.create(tresc, artykul_id)
+            return Response(PytaniaSerializer(pytanie).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PytaniaArtykulAPIview(APIView):
+    service = PytaniaService()
+
+    def get(self, request, artykul_id):
+        pytania = self.service.get_artykul_id(artykul_id)
+        if not pytania:
+            return Response({"error": "Brak pytań"}, status=404)
+        return Response(PytaniaSerializer(pytania, many=True).data)
+
+class PytanieSzczegolyAPIview(APIView):
+    service = PytaniaService()
+
+    def get_permissions(self):
+        if self.request.method in ["PUT", "DELETE"]:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+
+    def get(self, request, id):
+        pytanie = self.service.get(id)
+        if not pytanie:
+            return Response({"error": "Nie znaleziono pytania"}, status=404)
+        return Response(PytaniaSerializer(pytanie).data)
+
+    def put(self, request, id):
+        serializer = PytaniaSerializer(data=request.data)
+        if serializer.is_valid():
+            tresc = serializer.validated_data["tresc"]
+            artykul_id = serializer.validated_data["artykul_id"]
+
+            updated = self.service.update(id, tresc, artykul_id)
+            return Response(PytaniaSerializer(updated).data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, id):
+        deleted = self.service.delete(id)
+        if deleted:
+            return Response({"message": f"Pytanie {id} usunięte."})
+        return Response({"error": "Nie znaleziono pytania"}, status=404)
 
 
 
@@ -229,7 +294,7 @@ TODO
 Artykul POST/PUT/DELETE
 KURS PUT/DELETE
 ROZDZIAL GET/POST/PUT/DELETE TESTUJ API
-    PYTANIA GET/POST/PUT/DELETE
+PYTANIA GET/POST/PUT/DELETE
     ODPOWIEDZ GET/POST/PUT/DELETE
     ZAPISARTYKULU GET/DELETE/POST
     NOTATKA GET/POST/PUT/DELETE
