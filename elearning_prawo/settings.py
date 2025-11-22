@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'uzytkownicy',
     'integracja_uzytkownika',
     'statystyki',
+    'drf_yasg',
 ]
 
 REST_FRAMEWORK = {

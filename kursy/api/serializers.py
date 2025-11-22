@@ -39,3 +39,8 @@ class RozdzialSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     nazwa_rozdzialu = serializers.CharField()
     kurs_id = serializers.IntegerField()
+
+class PytaniaSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField()
+    artykul_id = serializers.IntegerField()
