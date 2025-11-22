@@ -15,14 +15,18 @@ urlpatterns = [
          name="rozdzial-szczegoly"),
        
      # Artykuły 
-     path('<int:id>/artykuly/', views.ArtykulyAPIview.as_view(), name="artykuly-lista"),
-     path('artykuly/<int:id>/', views.ArtykulyAPIview.as_view(), name="artykul-szczegoly"),
+     path('<int:id>/artykuly/', views.ArtykulyAPIView.as_view(), name="artykuly-lista"),
+     path('artykuly/<int:id>/', views.ArtykulyAPIView.as_view(), name="artykul-szczegoly"),
 
 
      # Pytania
-     path('pytania/', views.PytaniaAPIview.as_view(), name="pytania-lista"),
-     path('pytania/zmien/<int:id>/', views.PytanieSzczegolyAPIview.as_view(), name="pytanie-zmiana"),
-     path('pytania/artykul/<int:artykul_id>/', views.PytaniaArtykulAPIview.as_view(), name="pytania-po-artykule"),
+     path('pytania/', views.PytaniaAPIView.as_view(), name="pytania-lista"),
+     path('pytania/zmien/<int:id>/', views.PytanieSzczegolyAPIView.as_view(), name="pytanie-zmiana"),
+     path('pytania/artykul/<int:artykul_id>/', views.PytaniaArtykulAPIView.as_view(), name="pytania-po-artykule"),
     
-    
+     #odpowiedzi
+     path('odpowiedzi/', views.OdpowiedziAPIView.as_view(), name="odpowiedzi-zmiana"),
+     path('odpowiedz/<int:id>/', views.OdpowiedziSzczegolyAPIView.as_view(), name="odpowiedz-szczegoly"),
+     path('odpowiedzi/pytanie/<int:pytanie_id>', views.OdpowiedziAPIView.as_view(), name="odpowiedzi-pytania"),
+     
 ]

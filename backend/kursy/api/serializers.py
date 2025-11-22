@@ -44,3 +44,9 @@ class PytaniaSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     tresc = serializers.CharField()
     artykul_id = serializers.IntegerField()
+
+class OdpowiedziSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField(allow_blank=False)
+    poprawna = serializers.BooleanField(required=True)
+    pytanie_id = serializers.IntegerField()
