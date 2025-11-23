@@ -20,9 +20,19 @@ urlpatterns = [
          views.MojeNotatkiApiView.as_view(), 
          name="moje-notatki"),
 
-     path('moje-notatki/<int:id>', 
+     path('moje-notatki/<int:id>/', 
          views.NotatkaSzczegolyApiView.as_view(), 
          name="notatka-szczegoly"),
+
+
+     #Komentarze 
+     path('artykuly/<int:artykul_id>/komentarze/', 
+         views.KomentarzeAPIView.as_view(), 
+         name="komentarze"),     
+     
+     path('komentarze/<int:id>/', 
+         views.KomentarzSzczegolyAPIView.as_view(), 
+         name="komentarze-szczegoly"),    
 
      
 

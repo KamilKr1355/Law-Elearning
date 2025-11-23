@@ -43,3 +43,10 @@ class NotatkaPostSerializer(serializers.Serializer):
 class NotatkaPutSerializer(serializers.Serializer):
     tresc = serializers.CharField()
 
+class KomentarzSerializer(serializers.Serializer):
+     id = serializers.IntegerField(read_only=True)
+     tresc = serializers.CharField()
+     uzytkownik_id = serializers.IntegerField(read_only=True)
+     artykul_id = serializers.IntegerField(read_only=True)
+     data_zapisu = serializers.DateTimeField(read_only=True)
+     username = serializers.CharField(read_only=True)  
