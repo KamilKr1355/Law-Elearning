@@ -15,5 +15,15 @@ urlpatterns = [
          views.UsunZapisArtykuluAPIView.as_view(), 
          name="usun-zapis"),
 
+     # Notatki
+     path('moje-notatki/', 
+         views.MojeNotatkiApiView.as_view(), 
+         name="moje-notatki"),
+
+     path('moje-notatki/<int:id>', 
+         views.NotatkaSzczegolyApiView.as_view(), 
+         name="notatka-szczegoly"),
+
+     
 
 ]
