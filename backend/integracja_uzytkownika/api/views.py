@@ -4,10 +4,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           ZapisArtykuluSerializer,ZapisArtykuluPostSerializer,
-                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer)
+                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,
+                          KomentarzSerializer)
 from integracja_uzytkownika.services.quiz_service import QuizService
 from integracja_uzytkownika.services.zapis_service import ZapisService
 from integracja_uzytkownika.services.notatka_service import NotatkaService
+from integracja_uzytkownika.services.komentarz_service import KomentarzService
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 
 
@@ -201,6 +203,122 @@ class NotatkaSzczegolyApiView(APIView):
         return Response({"error":"Nie znaleziono notatki lub brak uprawnien"},
                         status=status.HTTP_404_NOT_FOUND)
             
+class KomentarzeAPIView(APIView):
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]  
+        return [IsAuthenticated()]  
+    
+    service = KomentarzService()
+    
+
+    def get(self,request,artykul_id):
+
+        komentarze = self.service.get_by_artykul(artykul_id)
+
+        if not komentarze:
+            return Response({"message",f"Artykuł {artykul_id} nie ma komentarzy"},
+                            status=status.HTTP_200_OK)
+        
+        return Response(KomentarzSerializer(komentarze,many=True).data,
+                        status=status.HTTP_200_OK)
+    
+    def post(self,request,artykul_id):
+
+        serializer = KomentarzSerializer(data = request.data)
+
+        if serializer.is_valid():
+            tresc = serializer.validated_data['tresc']
+
+            komentarz = self.service.create(tresc,artykul_id,request.user.id)
+
+            if not komentarz:
+                return Response({"error":"Nie udalo sie dodac komentarza"})
+            
+            return Response(KomentarzSerializer(komentarz).data,
+                            status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
+
+class KomentarzSzczegolyAPIView(APIView):
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
+    service = KomentarzService()
+
+    def get(self,request,id):
+
+        komentarz = self.service.get_by_id(id)
+
+        if not komentarz:
+            return Response({"error":"Nie znaleziono komentarza"},
+                            status=status.HTTP_404_NOT_FOUND)
+    
+        return Response(KomentarzSerializer(komentarz).data,
+                        status=status.HTTP_200_OK)
+    
+    def put(self,request,id):
+
+        serializer = KomentarzSerializer(data=request.data)
+
+        if serializer.is_valid():
+            tresc = serializer.validated_data['tresc']
+
+            komentarz = self.service.get_by_id(id)
+
+            if not komentarz:
+                return Response({"error" : "Nie znaleziono komentarza"},
+                                status=status.HTTP_404_NOT_FOUND)
+            
+            if komentarz["uzytkownik_id"] != request.user.id:
+                return Response(
+                    {"error": "Możesz edytować tylko swoje komentarze"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            updated = self.service.update(id,tresc,request.user.id)
+
+            if not updated:
+                return Response({"error":"Nie udalo sie zaktualizowac komentarza"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(KomentarzSerializer(komentarz).data,
+                            status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self,request,id):
+
+        komentarz = self.service.get_by_id(id)
+
+        if not komentarz:
+            return Response({"error","Nie znaleziono komentarza"},
+                            status=status.HTTP_404_NOT_FOUND)
+        
+
+        isAuthor = self.request.user.id == komentarz["uzytkownik_id"]
+        isAdmin = self.request.user.is_staff
+
+        if not(isAdmin or isAuthor):
+            
+            return Response({"error":"Brak uprawnień do usuniecia komentarza"},
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        deleted = self.service.delete(id,self.request.user.id,isAdmin)
+
+        if deleted:
+            return Response({"message":"Komentarz usunięty"},
+                            status=status.HTTP_200_OK)
+
+        return Response({"error":"Nie udało się usunąć komentarza"},
+                        status=status.HTTP_400_BAD_REQUEST)
+    
 
 
 """
