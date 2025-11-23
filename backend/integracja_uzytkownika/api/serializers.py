@@ -18,3 +18,13 @@ class QuizSerializer(serializers.Serializer):
 class SprawdzOdpowiedzSerializer(serializers.Serializer):
     pytanie_id = serializers.IntegerField()
     wybrana_opcja = serializers.CharField()
+
+class ZapisArtykuluSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    data_zapisu = serializers.DateTimeField(read_only=True)
+    tresc = serializers.CharField(read_only=True)
+    tytul = serializers.CharField(read_only=True)
+
+
+class ZapisArtykuluPostSerializer(serializers.Serializer):
+    artykul_id = serializers.IntegerField()
