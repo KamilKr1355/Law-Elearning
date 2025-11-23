@@ -28,3 +28,18 @@ class ZapisArtykuluSerializer(serializers.Serializer):
 
 class ZapisArtykuluPostSerializer(serializers.Serializer):
     artykul_id = serializers.IntegerField()
+
+class NotatkaSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField()
+    uzytkownik_id = serializers.IntegerField(read_only=True)
+    artykul_id = serializers.IntegerField()
+    data_zapisu = serializers.DateTimeField(read_only=True)
+
+class NotatkaPostSerializer(serializers.Serializer):
+    tresc = serializers.CharField()
+    artykul_id = serializers.IntegerField()
+
+class NotatkaPutSerializer(serializers.Serializer):
+    tresc = serializers.CharField()
+
