@@ -5,11 +5,14 @@ from rest_framework import status
 from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           ZapisArtykuluSerializer,ZapisArtykuluPostSerializer,
                           NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,
-                          KomentarzSerializer)
+                          KomentarzSerializer,WynikiEgzaminuSerializer, 
+    AverageUzytkownikKursSerializer,
+    AverageKursSerializer)
 from integracja_uzytkownika.services.quiz_service import QuizService
 from integracja_uzytkownika.services.zapis_service import ZapisService
 from integracja_uzytkownika.services.notatka_service import NotatkaService
 from integracja_uzytkownika.services.komentarz_service import KomentarzService
+from integracja_uzytkownika.services.wyniki_egzaminu_service import WynikEgzaminuService
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 
 
@@ -32,12 +35,22 @@ class Start_quiz(APIView):
 
         return Response(QuizSerializer(quiz, many=True).data, status=status.HTTP_200_OK)
 
-
+"""
+POST {{URL}}/api/aktywnosc/quiz/sprawdz/
+{
+    "kurs_id": 1,
+    "odpowiedzi" : [
+        {"pytanie_id":1,"wybrana_opcja":2},
+        {"pytanie_id":2,"wybrana_opcja":5}
+    ]
+}
+"""
 class Sprawdz_quiz(APIView):
     permission_classes = [IsAuthenticated]
 
     service = QuizService()
-
+    wyniki_service = WynikEgzaminuService()  
+    
     def post(self, request):
         serializer = SprawdzOdpowiedzSerializer(
             data=request.data.get("odpowiedzi"),
@@ -47,11 +60,19 @@ class Sprawdz_quiz(APIView):
         if not serializer.is_valid():
             return Response({"error": "Zły format odpowiedzi"}, status=status.HTTP_400_BAD_REQUEST)
 
+        kurs_id = request.data.get("kurs_id") 
+        
+        if not kurs_id:
+            return Response({"error": "Brak wymaganego pola kurs_id w ciele żądania"}, status=status.HTTP_400_BAD_REQUEST)
+
         wynik, poprawne_ids = self.service.check_quiz(serializer.validated_data)
+        procent = round(float(100*wynik/len(request.data["odpowiedzi"])),2)
+        self.wyniki_service.insert_wynik(procent,kurs_id,request.user.id)
 
         return Response({
             "punkty": wynik,
-            "poprawne": poprawne_ids
+            "poprawne": poprawne_ids,
+            "wynik": procent
         }, status=status.HTTP_200_OK)
 
 
@@ -287,6 +308,8 @@ class KomentarzSzczegolyAPIView(APIView):
                 return Response({"error":"Nie udalo sie zaktualizowac komentarza"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
+            komentarz = self.service.get_by_id(updated)
+
             return Response(KomentarzSerializer(komentarz).data,
                             status=status.HTTP_200_OK)
         
@@ -319,7 +342,92 @@ class KomentarzSzczegolyAPIView(APIView):
         return Response({"error":"Nie udało się usunąć komentarza"},
                         status=status.HTTP_400_BAD_REQUEST)
     
+class WynikiEgzaminuAPIView(APIView):
 
+    permission_classes = [IsAuthenticated]
+    service = WynikEgzaminuService()
+
+    def get(self, request):
+        kurs_id = request.query_params.get('kurs_id')
+        
+        if kurs_id:
+            wyniki = self.service.get_by_uzytkownik_and_kurs(request.user.id, kurs_id)
+        else:
+            wyniki = self.service.get_by_uzytkownik(request.user.id)
+        
+        if not wyniki:
+            return Response(
+                {"message": "Brak wyników egzaminów"},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            WynikiEgzaminuSerializer(wyniki, many=True).data,
+            status=status.HTTP_200_OK
+        )
+
+
+class WynikEgzaminuSzczegolyAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    service = WynikEgzaminuService()
+
+    def get(self, request, id):
+        wynik = self.service.get_by_id(id)
+        
+        if not wynik:
+            return Response(
+                {"error": "Nie znaleziono wyniku"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if wynik['uzytkownik_id'] != request.user.id:
+            return Response(
+                {"error": "Brak uprawnień"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return Response(
+            WynikiEgzaminuSerializer(wynik).data,
+            status=status.HTTP_200_OK
+        )
+
+
+class SredniaUzytkownikKursAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    service = WynikEgzaminuService()
+
+    def get(self, request, kurs_id):
+        srednia = self.service.get_average_uzytkownik_kurs_grade(request.user.id, kurs_id)
+        
+        if not srednia:
+            return Response(
+                {"message": "Brak wyników dla tego kursu"},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            AverageUzytkownikKursSerializer(srednia).data,
+            status=status.HTTP_200_OK
+        )
+
+
+class SredniaKursAPIView(APIView):
+    permission_classes = [IsAuthenticated]  
+    service = WynikEgzaminuService()
+
+    def get(self, request, kurs_id):
+        srednia = self.service.get_average_kurs_grade(kurs_id)
+        
+        if not srednia:
+            return Response(
+                {"message": "Brak wyników dla tego kursu"},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            AverageKursSerializer(srednia).data,
+            status=status.HTTP_200_OK
+        )
 
 """
 TODO 
@@ -330,9 +438,9 @@ PYTANIA GET/POST/PUT/DELETE
 ODPOWIEDZ GET/POST/PUT/DELETE
 ZAPISARTYKULU GET/DELETE/POST
 NOTATKA GET/POST/PUT/DELETE
-    KOMENTARZ GET/POST/PUT/DELETE
-    STATYSTYKIPYTANIA GET/PUT/PATCH?
+KOMENTARZ GET/POST/PUT/DELETE
+WYNIKIEGZAMINU POST/GET/PUT/PATCH
     PROGRESSPYTAN GET/PUT/PATCH
-    WYNIKIEGZAMINU POST/GET/PUT/PATCH
     OCENAARTYKULU GET/POST/PATCH/PUT?
+    STATYSTYKIPYTANIA GET/PUT/PATCH?
 """

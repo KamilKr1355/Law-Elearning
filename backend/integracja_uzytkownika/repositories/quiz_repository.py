@@ -17,7 +17,7 @@ class QuizRepository:
     def get_answers_for_question(question_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT o.tresc, o.poprawna
+                SELECT o.id,o.tresc, o.poprawna
                 FROM kursy_odpowiedz o
                 WHERE pytanie_id=%s;
             """, [question_id])
@@ -27,8 +27,8 @@ class QuizRepository:
     def get_all_correct_answers():
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT tresc, pytanie_id 
-                FROM kursy_odpowiedz 
+                SELECT odpowiedz_id, pytanie_id 
+                FROM quiz_view 
                 WHERE poprawna=true;
             """)
             return cursor.fetchall()
