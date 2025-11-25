@@ -17,7 +17,7 @@ class QuizSerializer(serializers.Serializer):
     
 class SprawdzOdpowiedzSerializer(serializers.Serializer):
     pytanie_id = serializers.IntegerField()
-    wybrana_opcja = serializers.CharField()
+    wybrana_opcja = serializers.IntegerField()
 
 class ZapisArtykuluSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -50,3 +50,22 @@ class KomentarzSerializer(serializers.Serializer):
      artykul_id = serializers.IntegerField(read_only=True)
      data_zapisu = serializers.DateTimeField(read_only=True)
      username = serializers.CharField(read_only=True)  
+
+class WynikiEgzaminuSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    data_zapisu = serializers.DateTimeField(read_only=True)
+    wynik = serializers.FloatField()
+    kurs_id = serializers.IntegerField()
+    uzytkownik_id = serializers.IntegerField(read_only=True)
+
+
+class AverageUzytkownikKursSerializer(serializers.Serializer):
+    srednia = serializers.FloatField()
+    kurs_id = serializers.IntegerField()
+    uzytkownik_id = serializers.IntegerField()
+    username = serializers.CharField()
+
+
+class AverageKursSerializer(serializers.Serializer):
+    srednia_wynik = serializers.FloatField()
+    kurs_id = serializers.IntegerField()

@@ -34,6 +34,23 @@ urlpatterns = [
          views.KomentarzSzczegolyAPIView.as_view(), 
          name="komentarze-szczegoly"),    
 
+      #Egzamin 
+
+      path('wyniki-egzaminu/', 
+         views.WynikiEgzaminuAPIView.as_view(), 
+         name="wyniki-egzaminu-lista"),
+    
+    path('wyniki-egzaminu/<int:id>/', 
+         views.WynikEgzaminuSzczegolyAPIView.as_view(), 
+         name="wynik-egzaminu-szczegoly"),
+    
+    path('wyniki-egzaminu/srednia/kurs/<int:kurs_id>/', 
+         views.SredniaUzytkownikKursAPIView.as_view(), 
+         name="srednia-uzytkownik-kurs"),
+    
+    path('wyniki-egzaminu/srednia-kursu/<int:kurs_id>/', 
+         views.SredniaKursAPIView.as_view(), 
+         name="srednia-kurs"),
      
 
 ]
