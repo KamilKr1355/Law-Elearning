@@ -2,7 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-# Quiz
-    #path('quiz/start/', views.Start_quiz.as_view(), name="quiz"),
+    
+    path('statystyki/pytanie/<int:pytanie_id>/',
+         views.StatystykiPytaniaAPIView.as_view(),
+         name="statystyki-pytania-szczegoly"),
+    path('statystyki/update/',
+         views.StatystykiPytaniaAPIView.as_view(),
+         name="statystyki-pytania-update"),
     
 ]

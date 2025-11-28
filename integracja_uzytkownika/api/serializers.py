@@ -84,3 +84,19 @@ class OcenaArtykuluCombinedSerializer(serializers.Serializer):
     artykul_id = serializers.IntegerField(read_only=True)
     srednia_ocena = serializers.FloatField(read_only=True) 
     moja_ocena = OcenaArtykuluSerializer(allow_null=True) 
+
+class ProgressPytanSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    pytanie_id = serializers.IntegerField()
+    status = serializers.CharField(max_length=2) 
+    data_aktualizacji = serializers.DateTimeField(read_only=True)
+
+class ProgressKursSummarySerializer(serializers.Serializer):
+    total_questions = serializers.IntegerField()
+    completed_count = serializers.IntegerField()
+    progress_percentage = serializers.FloatField(read_only=True) 
+
+class PytanieTrybNaukiSerializer(serializers.Serializer):
+    pytanie_id = serializers.IntegerField()
+    tresc = serializers.CharField()
+    status_uzytkownika = serializers.CharField(max_length=2) 
