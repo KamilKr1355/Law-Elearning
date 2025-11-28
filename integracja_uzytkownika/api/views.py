@@ -5,7 +5,8 @@ from rest_framework import status
 from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           ZapisArtykuluSerializer,ZapisArtykuluPostSerializer,
                           NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,
-                          KomentarzSerializer,WynikiEgzaminuSerializer, 
+                          KomentarzSerializer,WynikiEgzaminuSerializer,OcenaArtykuluCombinedSerializer
+                          ,OcenaArtykuluInputSerializer,OcenaArtykuluSerializer, 
     AverageUzytkownikKursSerializer,
     AverageKursSerializer)
 from integracja_uzytkownika.services.quiz_service import QuizService
@@ -13,6 +14,7 @@ from integracja_uzytkownika.services.zapis_service import ZapisService
 from integracja_uzytkownika.services.notatka_service import NotatkaService
 from integracja_uzytkownika.services.komentarz_service import KomentarzService
 from integracja_uzytkownika.services.wyniki_egzaminu_service import WynikEgzaminuService
+from integracja_uzytkownika.services.ocena_artykulu_service import OcenaArtykuluService
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 
 
@@ -429,6 +431,54 @@ class SredniaKursAPIView(APIView):
             status=status.HTTP_200_OK
         )
 
+class OcenaArtykuluAPIView(APIView):
+    service = OcenaArtykuluService()
+    
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get(self, request, artykul_id):
+        
+        srednia_ocena_data = self.service.pobierz_srednia_ocene(artykul_id)
+        srednia_ocena = srednia_ocena_data['srednia_ocena']
+        
+        moja_ocena = None
+        if request.user.is_authenticated:
+            moja_ocena = self.service.pobierz_ocene_uzytkownika(artykul_id, request.user.id)
+
+        dane_wynikowe = {
+            "artykul_id": artykul_id,
+            "srednia_ocena": round(srednia_ocena, 2) if srednia_ocena is not None else 0.0,
+            "moja_ocena": moja_ocena
+        }
+
+        return Response(OcenaArtykuluCombinedSerializer(dane_wynikowe).data, status=status.HTTP_200_OK)
+
+    def post(self, request, artykul_id):
+        serializer = OcenaArtykuluInputSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            ocena = serializer.validated_data['ocena']
+            
+            ocena_obiekt = self.service.utworz_lub_aktualizuj_ocene(artykul_id, ocena, request.user.id)
+            
+            if ocena_obiekt:
+                return Response(OcenaArtykuluSerializer(ocena_obiekt).data, status=status.HTTP_201_CREATED)
+            
+            return Response({"error": "Nie udało się zapisać oceny."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, artykul_id):
+        usunieto = self.service.usun_ocene(artykul_id, request.user.id)
+        
+        if usunieto:
+            return Response({"message": "Ocena usunięta."}, status=status.HTTP_200_OK)
+        
+        return Response({"error": "Nie znaleziono oceny do usunięcia."}, status=status.HTTP_404_NOT_FOUND)
+
 """
 TODO 
 Artykul POST/PUT/DELETE
@@ -440,7 +490,7 @@ ZAPISARTYKULU GET/DELETE/POST
 NOTATKA GET/POST/PUT/DELETE
 KOMENTARZ GET/POST/PUT/DELETE
 WYNIKIEGZAMINU POST/GET/PUT/PATCH
+OCENAARTYKULU GET/POST/PATCH/PUT?
     PROGRESSPYTAN GET/PUT/PATCH
-    OCENAARTYKULU GET/POST/PATCH/PUT?
     STATYSTYKIPYTANIA GET/PUT/PATCH?
 """

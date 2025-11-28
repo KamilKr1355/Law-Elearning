@@ -69,3 +69,18 @@ class AverageUzytkownikKursSerializer(serializers.Serializer):
 class AverageKursSerializer(serializers.Serializer):
     srednia_wynik = serializers.FloatField()
     kurs_id = serializers.IntegerField()
+
+class OcenaArtykuluSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    ocena = serializers.IntegerField(min_value=1, max_value=5)
+    data_zapisu = serializers.DateTimeField(read_only=True) 
+    artykul_id = serializers.IntegerField(read_only=True)
+    uzytkownik_id = serializers.IntegerField(read_only=True)
+
+class OcenaArtykuluInputSerializer(serializers.Serializer):
+    ocena = serializers.IntegerField(min_value=1, max_value=5)
+
+class OcenaArtykuluCombinedSerializer(serializers.Serializer):
+    artykul_id = serializers.IntegerField(read_only=True)
+    srednia_ocena = serializers.FloatField(read_only=True) 
+    moja_ocena = OcenaArtykuluSerializer(allow_null=True) 
