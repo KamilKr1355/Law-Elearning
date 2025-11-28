@@ -15,30 +15,30 @@ urlpatterns = [
          views.UsunZapisArtykuluAPIView.as_view(), 
          name="usun-zapis"),
 
-     # Notatki
-     path('moje-notatki/', 
-         views.MojeNotatkiApiView.as_view(), 
-         name="moje-notatki"),
+    # Notatki
+    path('moje-notatki/', 
+        views.MojeNotatkiApiView.as_view(), 
+        name="moje-notatki"),
 
-     path('moje-notatki/<int:id>/', 
-         views.NotatkaSzczegolyApiView.as_view(), 
-         name="notatka-szczegoly"),
+    path('moje-notatki/<int:id>/', 
+        views.NotatkaSzczegolyApiView.as_view(), 
+        name="notatka-szczegoly"),
 
 
-     #Komentarze 
-     path('artykuly/<int:artykul_id>/komentarze/', 
-         views.KomentarzeAPIView.as_view(), 
-         name="komentarze"),     
+    #Komentarze 
+    path('artykuly/<int:artykul_id>/komentarze/', 
+        views.KomentarzeAPIView.as_view(), 
+        name="komentarze"),     
      
-     path('komentarze/<int:id>/', 
-         views.KomentarzSzczegolyAPIView.as_view(), 
-         name="komentarze-szczegoly"),    
+    path('komentarze/<int:id>/', 
+        views.KomentarzSzczegolyAPIView.as_view(), 
+        name="komentarze-szczegoly"),    
 
-      #Egzamin 
+    #Egzamin 
 
-      path('wyniki-egzaminu/', 
-         views.WynikiEgzaminuAPIView.as_view(), 
-         name="wyniki-egzaminu-lista"),
+    path('wyniki-egzaminu/', 
+        views.WynikiEgzaminuAPIView.as_view(), 
+        name="wyniki-egzaminu-lista"),
     
     path('wyniki-egzaminu/<int:id>/', 
          views.WynikEgzaminuSzczegolyAPIView.as_view(), 
@@ -52,5 +52,9 @@ urlpatterns = [
          views.SredniaKursAPIView.as_view(), 
          name="srednia-kurs"),
      
+     #OcenaArtykulu
+     path('oceny/artykul/<int:artykul_id>/',
+         views.OcenaArtykuluAPIView.as_view(),
+         name="ocena-artykulu"),
 
 ]
