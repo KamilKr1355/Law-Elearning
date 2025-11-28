@@ -52,9 +52,13 @@ urlpatterns = [
          views.SredniaKursAPIView.as_view(), 
          name="srednia-kurs"),
      
-     #OcenaArtykulu
-     path('oceny/artykul/<int:artykul_id>/',
+    #OcenaArtykulu
+    path('oceny/artykul/<int:artykul_id>/',
          views.OcenaArtykuluAPIView.as_view(),
          name="ocena-artykulu"),
-
+    
+    #ProgressPytan
+    path('progress/kurs/<int:kurs_id>/', 
+         views.ProgressPytanAPIView.as_view(), 
+         name="progress-pytan-kurs"),
 ]

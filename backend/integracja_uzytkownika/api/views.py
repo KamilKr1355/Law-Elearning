@@ -8,9 +8,10 @@ from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           KomentarzSerializer,WynikiEgzaminuSerializer,OcenaArtykuluCombinedSerializer
                           ,OcenaArtykuluInputSerializer,OcenaArtykuluSerializer, 
     AverageUzytkownikKursSerializer,
-    AverageKursSerializer)
+    AverageKursSerializer, ProgressPytanSerializer,ProgressKursSummarySerializer)
 from integracja_uzytkownika.services.quiz_service import QuizService
 from integracja_uzytkownika.services.zapis_service import ZapisService
+from integracja_uzytkownika.services.progress_pytan_service import ProgressPytanService
 from integracja_uzytkownika.services.notatka_service import NotatkaService
 from integracja_uzytkownika.services.komentarz_service import KomentarzService
 from integracja_uzytkownika.services.wyniki_egzaminu_service import WynikEgzaminuService
@@ -479,6 +480,23 @@ class OcenaArtykuluAPIView(APIView):
         
         return Response({"error": "Nie znaleziono oceny do usunięcia."}, status=status.HTTP_404_NOT_FOUND)
 
+class ProgressPytanAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    service = ProgressPytanService()
+
+    def get(self, request, kurs_id):
+        progress_list, summary = self.service.pobierz_postep_wg_kursu(request.user.id, kurs_id)
+        
+        total = summary.get('total_questions', 0)
+        completed = summary.get('completed_count', 0)
+        percentage = round((completed / total) * 100, 2) if total > 0 else 0.0
+        
+        summary['progress_percentage'] = percentage
+
+        return Response({
+            "lista_postepu": ProgressPytanSerializer(progress_list, many=True).data,
+            "podsumowanie": ProgressKursSummarySerializer(summary).data
+        }, status=status.HTTP_200_OK)
 """
 TODO 
 Artykul POST/PUT/DELETE
