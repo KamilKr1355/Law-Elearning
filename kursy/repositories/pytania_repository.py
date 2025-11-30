@@ -44,7 +44,7 @@ class PytaniaRepository:
                 WHERE id=%s
                 RETURNING id;
             """, [tresc,artykul_id, id])
-            return cursor.fetchone()
+            return cursor.fetchone()[0]
 
     @staticmethod
     def delete(id):

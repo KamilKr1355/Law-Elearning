@@ -22,8 +22,12 @@ lista_artykulow_schema_response = openapi.Response("Lista kursów.", ArtykulSeri
 artykulView_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulViewSerializer)
 lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulViewSerializer(many=True))
 
-rozdzial_schema_response = openapi.Response("Szczegóły kursu.", RozdzialSerializer)
-lista_rozdzial_schema_response = openapi.Response("Lista kursów.", RozdzialSerializer(many=True))
+rozdzial_schema_response = openapi.Response("Szczegóły rozdziału.", RozdzialSerializer)
+lista_rozdzial_schema_response = openapi.Response("Lista rozdziałów.", RozdzialSerializer(many=True))
+
+pytania_schema_response = openapi.Response("Szczegóły pytania.", PytaniaSerializer)
+lista_pytania_schema_response = openapi.Response("Lista pytań.", PytaniaSerializer(many=True))
+
 
 class KursyAPIView(APIView):
     """
@@ -426,6 +430,15 @@ class RozdzialSzczegolyAPIView(APIView):
         )
             
 class PytaniaAPIView(APIView):
+    """
+    ZARZĄDZANIE PYTANIAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie wszystkich pytań przez zalogowanych użytkowników (GET), 
+    a także tworzenie pytań przez administratorów (POST).
+    
+    Publiczne trasy: GET.
+    Trasy administracyjne: POST.
+    """
     service = PytaniaService()
 
     def get_permissions(self):
@@ -433,10 +446,33 @@ class PytaniaAPIView(APIView):
             return [IsAdminUser()]
         return [IsAuthenticated()]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca wszystkie pytania",
+        responses={
+            status.HTTP_200_OK: lista_pytania_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono pytań"
+        }
+    )
     def get(self, request):
         pytania = self.service.list_all()
-        return Response(PytaniaSerializer(pytania, many=True).data)
 
+        if pytania:
+            return Response(PytaniaSerializer(pytania, many=True).data,status=status.HTTP_200_OK)
+
+        return Response(
+                {"error": "Nie znaleziono pytań"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+    @swagger_auto_schema(
+            operation_description="DODAWANIE (ADMIN): Tworzy nowe pytanie. Wymaga statusu administratora",
+            request_body=PytaniaSerializer,
+            responses={
+                status.HTTP_201_CREATED: pytania_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )
     def post(self, request):
         serializer = PytaniaSerializer(data=request.data)
         if serializer.is_valid():
@@ -444,20 +480,44 @@ class PytaniaAPIView(APIView):
             artykul_id = serializer.validated_data["artykul_id"]
 
             pytanie = self.service.create(tresc, artykul_id)
-            return Response(PytaniaSerializer(pytanie).data)
+            return Response(PytaniaSerializer(pytanie).data,status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PytaniaArtykulAPIView(APIView):
+    """
+    ZARZĄDZANIE PYTANIAMI KONKRETNEGO ARTYKUŁU (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie wszystkich pytań przypisanych do danego artykułu przez wszystkich użytkowników (GET), 
+    
+    Publiczne trasy: GET.
+    """
     service = PytaniaService()
+    permission_classes = [AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca wszystkie pytania konkretnego artykułu",
+        responses={
+            status.HTTP_200_OK: lista_pytania_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono pytań"
+        }
+    )
     def get(self, request, artykul_id):
         pytania = self.service.get_artykul_id(artykul_id)
         if not pytania:
-            return Response({"error": "Brak pytań"}, status=404)
-        return Response(PytaniaSerializer(pytania, many=True).data)
+            return Response({"error": "Brak pytań"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(PytaniaSerializer(pytania, many=True).data,status=status.HTTP_200_OK)
 
 class PytanieSzczegolyAPIView(APIView):
+    """
+    ZARZĄDZANIE KONKRETNYM PYTANIEM (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie wszystkich pytań przez zalogowanych użytkowników (GET), 
+    a także edytowanie i usuwanie pytań przez administratorów (PUT, DELETE).
+    
+    Publiczne trasy: GET.
+    Trasy administracyjne: PUT,DELETE.
+    """
     service = PytaniaService()
 
     def get_permissions(self):
@@ -465,12 +525,27 @@ class PytanieSzczegolyAPIView(APIView):
             return [IsAdminUser()]
         return [IsAuthenticated()]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły pytania id",
+        responses={
+            status.HTTP_200_OK: pytania_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono pytania"
+        }
+    )
     def get(self, request, id):
         pytanie = self.service.get(id)
         if not pytanie:
-            return Response({"error": "Nie znaleziono pytania"}, status=404)
+            return Response({"error": "Nie znaleziono pytania"}, status=status.HTTP_404_NOT_FOUND)
         return Response(PytaniaSerializer(pytanie).data)
 
+    @swagger_auto_schema(
+            operation_description="AKTUALIZOWANIE (ADMIN): Aktualizuje pytanie po id. Wymaga statusu administratora",
+            request_body=PytaniaSerializer,
+            responses={
+                status.HTTP_200_OK: pytania_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    ) 
     def put(self, request, id):
         serializer = PytaniaSerializer(data=request.data)
         if serializer.is_valid():
@@ -478,9 +553,16 @@ class PytanieSzczegolyAPIView(APIView):
             artykul_id = serializer.validated_data["artykul_id"]
 
             updated = self.service.update(id, tresc, artykul_id)
-            return Response(PytaniaSerializer(updated).data)
-        return Response(serializer.errors, status=400)
+            return Response(PytaniaSerializer(updated).data,status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+            operation_description="USUWANIE (ADMIN): Usuwanie pytania po id. Wymaga statusu administratora",
+            responses={
+                status.HTTP_200_OK: openapi.Response(description="Pytanie usunięte"),
+                status.HTTP_400_BAD_REQUEST: "Nie znaleziono pytania"
+            }
+    ) 
     def delete(self, request, id):
         deleted = self.service.delete(id)
         if deleted:
