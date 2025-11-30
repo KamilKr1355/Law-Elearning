@@ -28,6 +28,9 @@ lista_rozdzial_schema_response = openapi.Response("Lista rozdziałów.", Rozdzia
 pytania_schema_response = openapi.Response("Szczegóły pytania.", PytaniaSerializer)
 lista_pytania_schema_response = openapi.Response("Lista pytań.", PytaniaSerializer(many=True))
 
+odpowiedzi_schema_response = openapi.Response("Szczegóły odpowiedzi.", OdpowiedziSerializer)
+lista_odpowiedzi_schema_response = openapi.Response("Lista odpowiedzi.", OdpowiedziSerializer(many=True))
+
 
 class KursyAPIView(APIView):
     """
@@ -570,14 +573,41 @@ class PytanieSzczegolyAPIView(APIView):
         return Response({"error": "Nie znaleziono pytania"}, status=404)
     
 class OdpowiedziSzczegolyAPIView(APIView):
+    """
+    ZARZĄDZANIE ODPOWIEDZIAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie konkretnej odpowiedzi przez zalogowanych użytkowników (GET), 
+    a także  modyfikowanie i usuwanie odpowiedzi przez administratorów (PUT, DELETE).
+    
+    Publiczne trasy: GET (szczegóły).
+    Trasy administracyjne: PUT, DELETE.
+    """
     service = OdpowiedziService()
 
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły odpowiedzi po id",
+        responses={
+            status.HTTP_200_OK: odpowiedzi_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono odpowiedzi"
+        }
+    )
     def get(self, request,id):
         odpowiedz = self.service.get(id)
         if not odpowiedz:
             return Response({"error": "Nie znaleziono odpowiedzi"}, status=status.HTTP_404_NOT_FOUND)
-        return Response(OdpowiedziSerializer(odpowiedz,many=False).data)
+        return Response(OdpowiedziSerializer(odpowiedz,many=False).data,status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+            operation_description="AKTUALIZOWANIE (ADMIN): Aktualizuje odpowiedzi po id. Wymaga statusu administratora",
+            request_body=OdpowiedziSerializer,
+            responses={
+                status.HTTP_200_OK: odpowiedzi_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych",
+                status.HTTP_404_NOT_FOUND: "Nie znaleziono odpowiedzi"
+            }
+    ) 
     def put(self, request, id):
         serializer = OdpowiedziSerializer(data=request.data)
         if serializer.is_valid():
@@ -591,15 +621,31 @@ class OdpowiedziSzczegolyAPIView(APIView):
                 return Response({"error": "Nie znaleziono odpowiedzi"}, status=status.HTTP_404_NOT_FOUND)
             
             return Response(OdpowiedziSerializer(odpowiedz).data)
-        return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+            operation_description="USUWANIE (ADMIN): Usuwanie odpowiedz po id. Wymaga statusu administratora",
+            responses={
+                status.HTTP_200_OK: openapi.Response(description="Odpowiedz usunięta"),
+                status.HTTP_404_NOT_FOUND: "Nie znaleziono odpowiedzi"
+            }
+    ) 
     def delete(self, request, id):
         deleted = self.service.delete(id)
         if deleted:
             return Response({"message": f"Odpowiedz {id} usunięta."})
-        return Response({"error": "Nie znaleziono odpowiedzi"}, status=404)
+        return Response({"error": "Nie znaleziono odpowiedzi"}, status=status.HTTP_404_NOT_FOUND)
 
 class OdpowiedziAPIView(APIView):
+    """
+    ZARZĄDZANIE ODPOWIEDZIAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie odpowiedzi do konkretnego pytania przez zalogowanych użytkowników (GET), 
+    a także tworzenie odpowiedzi przez administratorów (POST).
+    
+    Publiczne trasy: GET.
+    Trasy administracyjne: POST.
+    """
     service = OdpowiedziService()
 
     def get_permissions(self):
@@ -607,14 +653,14 @@ class OdpowiedziAPIView(APIView):
             return [IsAdminUser()]
         return [IsAuthenticated()]
 
-    def get(self, request,pytanie_id):
-        odpowiedz = self.service.get_pytanie_id(pytanie_id)
-
-        if not odpowiedz:
-            return Response({"error": "Nie znaleziono odpowiedzi"}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response(OdpowiedziSerializer(odpowiedz,many=True).data)
-
+    @swagger_auto_schema(
+            operation_description="DODAWANIE (ADMIN): Tworzy nowa odpowiedz. Wymaga statusu administratora",
+            request_body=OdpowiedziSerializer,
+            responses={
+                status.HTTP_201_CREATED: pytania_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )
     def post(self, request):
         serializer = OdpowiedziSerializer(data=request.data)
         if serializer.is_valid():
@@ -623,11 +669,42 @@ class OdpowiedziAPIView(APIView):
             pytanie_id = serializer.validated_data["pytanie_id"]
 
             odpowiedz = self.service.create(tresc,poprawna,pytanie_id)
-            return Response(OdpowiedziSerializer(odpowiedz).data)
+            return Response(OdpowiedziSerializer(odpowiedz).data,status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class OdpowiedziPytaniaAPIView(APIView):
+    """
+    ZARZĄDZANIE ODPOWIEDZIAMI (ADMIN / PUBLIC)
     
+    Endpointy umożliwiają przeglądanie odpowiedzi do konkretnego pytania przez zalogowanych użytkowników (GET), 
+    a także tworzenie odpowiedzi przez administratorów (POST).
+    
+    Publiczne trasy: GET.
+    Trasy administracyjne: POST.
+    """
+    service = OdpowiedziService()
+
+    def get_permissions(self):
+        return [IsAuthenticated()]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca wszystkie odpowiedzi do id pytania",
+        responses={
+            status.HTTP_200_OK: lista_odpowiedzi_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono odpowiedzi"
+        }
+    )
+    def get(self,request,pytanie_id):
+        odpowiedz = self.service.get_pytanie_id(pytanie_id)
+
+        if not odpowiedz:
+            return Response({"error": "Nie znaleziono odpowiedzi"}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response(OdpowiedziSerializer(odpowiedz,many=True).data,status=status.HTTP_200_OK)
+
+
+
 
 
 
