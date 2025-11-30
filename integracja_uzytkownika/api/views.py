@@ -17,7 +17,9 @@ from integracja_uzytkownika.services.komentarz_service import KomentarzService
 from integracja_uzytkownika.services.wyniki_egzaminu_service import WynikEgzaminuService
 from integracja_uzytkownika.services.ocena_artykulu_service import OcenaArtykuluService
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
-
+from drf_yasg.utils import swagger_auto_schema
+from integracja_uzytkownika.services.tryb_nauki_services import TrybNaukiService
+from .serializers import PytanieTrybNaukiSerializer # Zaimplementowany wcześniej
 
 class Start_quiz(APIView):
     permission_classes = [IsAuthenticated]
@@ -481,6 +483,7 @@ class OcenaArtykuluAPIView(APIView):
         return Response({"error": "Nie znaleziono oceny do usunięcia."}, status=status.HTTP_404_NOT_FOUND)
 
 class ProgressPytanAPIView(APIView):
+
     permission_classes = [IsAuthenticated]
     service = ProgressPytanService()
 
@@ -497,6 +500,28 @@ class ProgressPytanAPIView(APIView):
             "lista_postepu": ProgressPytanSerializer(progress_list, many=True).data,
             "podsumowanie": ProgressKursSummarySerializer(summary).data
         }, status=status.HTTP_200_OK)
+    
+
+class TrybNaukiAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+    service = TrybNaukiService()
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Pobiera zoptymalizowaną listę pytań do nauki dla danego kursu. Pytania są oznaczane jako W (Wyświetlone).",
+        responses={200: PytanieTrybNaukiSerializer(many=True)}
+    )
+    def get(self, request, kurs_id):
+        pytania = self.service.pobierz_pytania_dla_kursu(kurs_id, request.user.id)
+        
+        if not pytania:
+            return Response({"message": "Brak pytań do nauki w tym kursie."}, status=status.HTTP_200_OK)
+
+        for p in pytania:
+             self.service.oznacz_jako_wyswietlone(p['pytanie_id'], request.user.id)
+             p['status_uzytkownika'] = 'W' 
+
+        return Response(PytanieTrybNaukiSerializer(pytania, many=True).data, status=status.HTTP_200_OK)
 """
 TODO 
 Artykul POST/PUT/DELETE
