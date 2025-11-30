@@ -22,6 +22,9 @@ lista_artykulow_schema_response = openapi.Response("Lista kursów.", ArtykulSeri
 artykulView_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulViewSerializer)
 lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulViewSerializer(many=True))
 
+rozdzial_schema_response = openapi.Response("Szczegóły kursu.", RozdzialSerializer)
+lista_rozdzial_schema_response = openapi.Response("Lista kursów.", RozdzialSerializer(many=True))
+
 class KursyAPIView(APIView):
     """
     ZARZĄDZANIE KURSAMI (ADMIN / PUBLIC)
@@ -207,15 +210,15 @@ class ArtykulySzczegolyAPIView(APIView):
     ZARZĄDZANIE ARTYKULEM (ADMIN / PUBLIC)
     
     Endpointy umożliwiają przeglądanie konkretnego artykulu przez wszystkich użytkowników (GET), 
-    a także tworzenie, modyfikowanie i usuwanie artykulow przez administratorów (POST,PUT, DELETE).
+    a także modyfikowanie i usuwanie artykulow przez administratorów (PUT, DELETE).
     
     Publiczne trasy: GET (szczegóły).
-    Trasy administracyjne: POST, PUT, DELETE.
+    Trasy administracyjne: PUT, DELETE.
     """
     service = ArtykulService()
 
     def get_permissions(self):
-        if self.request.method in ["POST","PUT","DELETE"]:
+        if self.request.method in ["PUT","DELETE"]:
             return [IsAdminUser()]
         return [AllowAny()]
     #permission_classes = [IsAuthenticated]
@@ -271,13 +274,29 @@ class ArtykulySzczegolyAPIView(APIView):
         return Response({"error": "Nie znaleziono artykułu"}, status=status.HTTP_404_NOT_FOUND)
 
 class RozdzialyListaAPIView(APIView):
+    """
+    ZARZĄDZANIE ROZDZIALAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie rozdziałów przez wszystkich użytkowników (GET), 
+    a także tworzenie rozdziałów przez administratorów (POST).
+    
+    Publiczne trasy: GET.
+    Trasy administracyjne: POST.
+    """
     service = RozdzialService()
 
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAdminUser()]
-        return [IsAuthenticated()]
+        return [AllowAny()]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca liste rozdziałów dla kursu po id kursu",
+        responses={
+            status.HTTP_200_OK: lista_rozdzial_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono rozdziałów"
+        }
+    )
     def get(self, request, kurs_id):
         rozdzialy = self.service.list_by_kurs(kurs_id)
 
@@ -288,10 +307,18 @@ class RozdzialyListaAPIView(APIView):
             )
 
         return Response(
-            RozdzialSerializer(reversed(rozdzialy), many=True).data,
+            RozdzialSerializer(rozdzialy, many=True).data,
             status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(
+            operation_description="DODAWANIE (ADMIN): Tworzy nowy rozdział. Wymaga statusu administratora",
+            request_body=RozdzialSerializer,
+            responses={
+                status.HTTP_201_CREATED: rozdzial_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )
     def post(self, request, kurs_id):
         data = request.data.copy()
         data["kurs_id"] = kurs_id
@@ -310,14 +337,29 @@ class RozdzialyListaAPIView(APIView):
 
 
 class RozdzialSzczegolyAPIView(APIView):
-
+    """
+    ZARZĄDZANIE ROZDZIAŁEM (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie konkretnego artykulu przez wszystkich użytkowników (GET), 
+    a także  modyfikowanie i usuwanie rozdziałów przez administratorów (PUT, DELETE).
+    
+    Publiczne trasy: GET (szczegóły).
+    Trasy administracyjne: PUT, DELETE.
+    """
     service = RozdzialService()
 
     def get_permissions(self):
         if self.request.method in ["PUT", "DELETE"]:
             return [IsAdminUser()]
-        return [IsAuthenticated()]
+        return [AllowAny()]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły rozdziału po id",
+        responses={
+            status.HTTP_200_OK: rozdzial_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono rozdziału"
+        }
+    )
     def get(self, request, id):
         rozdzial = self.service.get_one(id)
 
@@ -332,6 +374,14 @@ class RozdzialSzczegolyAPIView(APIView):
             status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(
+            operation_description="AKTUALIZOWANIE (ADMIN): Aktualizuje rozdział po id. Wymaga statusu administratora",
+            request_body=RozdzialSerializer,
+            responses={
+                status.HTTP_200_OK: rozdzial_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    ) 
     def put(self, request, id):
         serializer = RozdzialSerializer(data=request.data)
 
@@ -354,6 +404,13 @@ class RozdzialSzczegolyAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+            operation_description="USUWANIE (ADMIN): Usuwanie rozdziału po id. Wymaga statusu administratora",
+            responses={
+                status.HTTP_200_OK: openapi.Response(description="Rozdział usunięty"),
+                status.HTTP_400_BAD_REQUEST: "Nie znaleziono rozdziału"
+            }
+    )  
     def delete(self, request, id):
         deleted = self.service.delete(id)
 
