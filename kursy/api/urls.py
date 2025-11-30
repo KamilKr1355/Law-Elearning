@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
      # Kursy
      path('', views.KursyAPIView.as_view(), name="kursy-lista"),
-     path('<int:id>/', views.KursyAPIView.as_view(), name='kurs-opis'),
+     path('<int:id>/', views.KursySzczegolyAPIView.as_view(), name='kurs-opis'),
     
      # Rozdziały 
      path('<int:kurs_id>/rozdzialy/', 
@@ -15,8 +15,8 @@ urlpatterns = [
          name="rozdzial-szczegoly"),
        
      # Artykuły 
-     path('<int:id>/artykuly/', views.ArtykulyAPIView.as_view(), name="artykuly-lista"),
-     path('artykuly/<int:id>/', views.ArtykulyAPIView.as_view(), name="artykul-szczegoly"),
+     path('<int:kurs_id>/artykuly/', views.ArtykulyAPIView.as_view(), name="artykuly-lista"),
+     path('artykuly/<int:id>/', views.ArtykulySzczegolyAPIView.as_view(), name="artykul-szczegoly"),
 
 
      # Pytania

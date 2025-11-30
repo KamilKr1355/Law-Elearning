@@ -3,12 +3,12 @@ from kursy.mappers.artykul_mapper import map_artykul_row
 
 class ArtykulService:
 
-    def list_all(self):
-        rows = ArtykulRepository.get_all()
+    def list_all(self,kurs_id):
+        rows = ArtykulRepository.get_all(kurs_id)
         return [map_artykul_row(r) for r in rows]
 
-    def get_one(self, id):
-        row = ArtykulRepository.get_by_id(id)
+    def get_one(self, artykul_id):
+        row = ArtykulRepository.get_by_id(artykul_id)
         return map_artykul_row(row) if row else None
 
     def create(self, tresc,tytul,nr_artykulu,rozdzial_id):
