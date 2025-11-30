@@ -27,6 +27,6 @@ urlpatterns = [
      #odpowiedzi
      path('odpowiedzi/', views.OdpowiedziAPIView.as_view(), name="odpowiedzi-zmiana"),
      path('odpowiedz/<int:id>/', views.OdpowiedziSzczegolyAPIView.as_view(), name="odpowiedz-szczegoly"),
-     path('odpowiedzi/pytanie/<int:pytanie_id>', views.OdpowiedziAPIView.as_view(), name="odpowiedzi-pytania"),
+     path('odpowiedzi/pytanie/<int:pytanie_id>/', views.OdpowiedziPytaniaAPIView.as_view(), name="odpowiedzi-pytania"),
      
 ]
