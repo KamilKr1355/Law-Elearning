@@ -12,59 +12,146 @@ from kursy.services.rozdzial_service import RozdzialService
 from kursy.services.pytanie_service import PytaniaService
 from kursy.services.odpowiedzi_service import OdpowiedziService
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
+kurs_schema_response = openapi.Response("Szczegóły kursu.", KursSerializer)
+lista_kursow_schema_response = openapi.Response("Lista kursów.", KursSerializer(many=True))
+
+artykul_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulSerializer)
+lista_artykulow_schema_response = openapi.Response("Lista kursów.", ArtykulSerializer(many=True))
+artykulView_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulViewSerializer)
+lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulViewSerializer(many=True))
 
 class KursyAPIView(APIView):
+    """
+    ZARZĄDZANIE KURSAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie dostępnych kursów przez wszystkich użytkowników (GET), 
+    a także dodawanie przez administratorów (POST).
+    
+    Publiczne trasy: GET (lista).
+    Trasy administracyjne: POST.
+    """
 
     service = KursService()
     serializer_class = KursSerializer
 
     def get_permissions(self):
-        if self.request.method in ["POST", "PUT", "DELETE"]:
+        if self.request.method in ["POST"]:
             return [IsAdminUser()]
         return [AllowAny()]
 
-    def get(self, request, id=None):
-        if id:
-            kurs = self.service.get_one(id)
-            if not kurs:
-                return Response({"error": "Nie znaleziono kursu"}, status=404)
-            return Response(KursSerializer(kurs).data)
-
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca listę wszystkich kursów.",
+        responses={
+            status.HTTP_200_OK: lista_kursow_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono żadnego kursu"
+        }
+    )
+    def get(self, request):
         kursy = self.service.list_all()
         if not kursy:
-            return Response({"error": "Nie znaleziono kursu"}, status=404)
+            return Response({"error": "Nie znaleziono kursu"}, status=status.HTTP_404_NOT_FOUND)
         return Response(KursSerializer(kursy, many=True).data)
 
-    @swagger_auto_schema(request_body=KursSerializer)
+    @swagger_auto_schema(
+            operation_description="DODAWANIE (ADMIN): Tworzy nowy kurs. Wymaga statusu administratora",
+            request_body=KursSerializer,
+            responses={
+                status.HTTP_201_CREATED: kurs_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )
     def post(self, request):
         serializer = KursSerializer(data=request.data)
         if serializer.is_valid():
             nazwa = serializer.validated_data["nazwa_kursu"]
             kurs = self.service.create(nazwa)
-            return Response(KursSerializer(kurs).data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(KursSerializer(kurs).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(request_body=KursSerializer)
+
+
+class KursySzczegolyAPIView(APIView):
+
+    """
+    ZARZĄDZANIE KURSEM (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie konkretnego kursu przez wszystkich użytkowników (GET), 
+    a także modyfikowanie i usuwanie kursów przez administratorów (PUT, DELETE).
+    
+    Publiczne trasy: GET (szczegóły).
+    Trasy administracyjne: PUT, DELETE.
+    """
+
+    service = KursService()
+    serializer_class = KursSerializer
+
+    def get_permissions(self):
+        if self.request.method in ["PUT", "DELETE"]:
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły pojedynczego kursu",
+        responses={
+            status.HTTP_200_OK: lista_kursow_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono kursu"
+        }
+    )
+    def get(self, request,id):
+        kurs = self.service.get_one(id)
+        if not kurs:
+            return Response({"error": "Nie znaleziono kursu"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(KursSerializer(kurs).data)
+
+
+    @swagger_auto_schema(
+            operation_description="AKTUALIZOWANIE (ADMIN): Modyfikuje istniejący kurs po ID, wymaga uprawnień administratora",
+            request_body=KursSerializer,
+            responses={
+                status.HTTP_200_OK: kurs_schema_response,
+                status.HTTP_404_NOT_FOUND: "Nie znaleziono kursu",
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych"
+            }
+    )
     def put(self, request, id):
         serializer = KursSerializer(data=request.data)
         if serializer.is_valid():
             nazwa = serializer.validated_data["nazwa_kursu"]
             kurs = self.service.update(id, nazwa)
             if not kurs:
-                return Response({"error": "Nie znaleziono kursu"}, status=404)
-            return Response(KursSerializer(kurs).data)
-        return Response(serializer.errors, status=400)
+                return Response({"error": "Nie znaleziono kursu"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(KursSerializer(kurs).data,status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+            operation_description="USUWANIE (ADMIN): Usuwa istniejący kurs po ID, wymaga uprawnień administratora",
+            responses={
+                status.HTTP_200_OK: openapi.Response(description="Kurs usunięty pomyślnie."),
+                status.HTTP_404_NOT_FOUND: "Nie znaleziono kursu."
+            }
+    )
     def delete(self, request, id):
         ok = self.service.delete(id)
         if not ok:
-            return Response({"error": "Nie znaleziono kursu"}, status=404)
-        return Response({"message": f"Kurs {id} usunięty"})
+            return Response({"error": "Nie znaleziono kursu"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": f"Kurs {id} usunięty"},status=status.HTTP_200_OK)
 
 
+"""
+TODO: Walidacja w serializerze czy dodawany artykul z konkretnego rozdzialu faktycznie jest w kursie
+"""
 class ArtykulyAPIView(APIView):
-
+    """
+    ZARZĄDZANIE ARTYKULAMI (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie wszystkich artykułów przez wszystkich użytkowników (GET), 
+    a także tworzenie artykulow przez administratorów (POST).
+    
+    Publiczne trasy: GET (szczegóły).
+    Trasy administracyjne: POST.
+    """
     service = ArtykulService()
 
     def get_permissions(self):
@@ -73,42 +160,91 @@ class ArtykulyAPIView(APIView):
         return [AllowAny()]
     #permission_classes = [IsAuthenticated]
 
-
-    def get(self, request, id=None):
-        if id:
-            artykul = self.service.get_one(id)
-            if not artykul:
-                return Response(
-                    {"error": "Brak artykułów"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            return Response(ArtykulViewSerializer(artykul, many=False).data)
-        else:
-            artykuly = self.service.list_all()
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca liste artykułów",
+        responses={
+            status.HTTP_200_OK: lista_artykulowView_schema_response,
+            status.HTTP_404_NOT_FOUND: "Brak artykułów"
+        }
+    )
+    def get(self, request, kurs_id):
+        artykuly = self.service.list_all(kurs_id)
         
-            if not artykuly:
-                return Response(
-                    {"error": "Brak artykułów"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        if not artykuly:
+            return Response(
+                {"error": "Brak artykułów"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-            return Response(ArtykulViewSerializer(artykuly, many=True).data)
+        return Response(ArtykulViewSerializer(artykuly, many=True).data,status=status.HTTP_200_OK)
     
-    def post(self,request):
+    @swagger_auto_schema(
+            operation_description="DODAWANIE (ADMIN): Tworzy nowy artykuł. Wymaga statusu administratora",
+            request_body=ArtykulSerializer,
+            responses={
+                status.HTTP_201_CREATED: artykul_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )
+    def post(self,request,kurs_id):
         serializer = ArtykulSerializer(data=request.data)
         if serializer.is_valid():
             tresc = serializer.validated_data["tresc"]
             tytul = serializer.validated_data["tytul"]
             nr_artykulu = serializer.validated_data["nr_artykulu"]
             rozdzial_id = serializer.validated_data["rozdzial_id"]
+            kurs_id = kurs_id
 
             artykul = self.service.create(tresc,tytul,nr_artykulu,rozdzial_id)
 
-            return Response(ArtykulSerializer(artykul).data)
+            return Response(ArtykulSerializer(artykul).data,status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
+
+class ArtykulySzczegolyAPIView(APIView):
+    """
+    ZARZĄDZANIE ARTYKULEM (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie konkretnego artykulu przez wszystkich użytkowników (GET), 
+    a także tworzenie, modyfikowanie i usuwanie artykulow przez administratorów (POST,PUT, DELETE).
+    
+    Publiczne trasy: GET (szczegóły).
+    Trasy administracyjne: POST, PUT, DELETE.
+    """
+    service = ArtykulService()
+
+    def get_permissions(self):
+        if self.request.method in ["POST","PUT","DELETE"]:
+            return [IsAdminUser()]
+        return [AllowAny()]
+    #permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły artykułu po id",
+        responses={
+            status.HTTP_200_OK: artykulView_schema_response,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono artykułu"
+        }
+    )
+    def get(self, request, id):
+        artykul = self.service.get_one(id)
+        if not artykul:
+            return Response(
+                {"error": "Brak artykułu"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(ArtykulViewSerializer(artykul, many=False).data,status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(
+            operation_description="AKTUALIZOWANIE (ADMIN): Aktualizuje artykuł po id. Wymaga statusu administratora",
+            request_body=ArtykulSerializer,
+            responses={
+                status.HTTP_200_OK: artykul_schema_response,
+                status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych"
+            }
+    )       
     def put(self,request,id):
         serializer = ArtykulSerializer(data=request.data)
         if serializer.is_valid():
@@ -118,15 +254,21 @@ class ArtykulyAPIView(APIView):
             rozdzial_id = serializer.validated_data["rozdzial_id"]
 
             artykul = self.service.update(tresc,tytul,nr_artykulu,rozdzial_id,id)
-            return Response(ArtykulSerializer(artykul).data)
+            return Response(ArtykulSerializer(artykul).data,status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+            operation_description="USUWANIE (ADMIN): Usuwanie artykułu po id. Wymaga statusu administratora",
+            responses={
+                status.HTTP_200_OK: openapi.Response(description="Artykuł usunięty"),
+                status.HTTP_400_BAD_REQUEST: "Nie znaleziono artykułu"
+            }
+    )  
     def delete(self,request,id):
         deleted = self.service.delete(id)
         if deleted:
             return Response({"message": f"Artykuł {id} usunięty."}, status=status.HTTP_200_OK)
         return Response({"error": "Nie znaleziono artykułu"}, status=status.HTTP_404_NOT_FOUND)
-
 
 class RozdzialyListaAPIView(APIView):
     service = RozdzialService()
