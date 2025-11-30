@@ -57,8 +57,12 @@ urlpatterns = [
          views.OcenaArtykuluAPIView.as_view(),
          name="ocena-artykulu"),
     
-    #ProgressPytan
-    path('progress/kurs/<int:kurs_id>/', 
+     #ProgressPytan
+     path('progress/kurs/<int:kurs_id>/', 
          views.ProgressPytanAPIView.as_view(), 
          name="progress-pytan-kurs"),
+
+     path('nauka/kurs/<int:kurs_id>/',
+         views.TrybNaukiAPIView.as_view(),
+         name="tryb-nauki-pytania"),
 ]
