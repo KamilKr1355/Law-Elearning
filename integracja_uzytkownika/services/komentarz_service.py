@@ -28,7 +28,7 @@ class KomentarzService:
     def update(self,id,tresc,uzytkownik_id):
 
         updated = KomentarzRepository.update(id,tresc,uzytkownik_id)
-        row = KomentarzRepository.get_by_id(updated)
+        row = KomentarzRepository.get_by_id(int(id))
 
         return map_komentarz_row(row) if row else None
     

@@ -48,8 +48,8 @@ class ZapisRepository:
     def create(uzytkownik_id, artykul_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO integracja_uzytkownika_zapisartykulu (uzytkownik_id, artykul_id)
-                VALUES (%s, %s)
+                INSERT INTO integracja_uzytkownika_zapisartykulu (uzytkownik_id, artykul_id,data_zapisu)
+                VALUES (%s, %s,NOW())
                 RETURNING id;
             """, [uzytkownik_id, artykul_id])
             return cursor.fetchone()[0]

@@ -17,7 +17,7 @@ class QuizRepository:
     def get_answers_for_question(question_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT o.id,o.tresc, o.poprawna
+                SELECT o.id,o.tresc
                 FROM kursy_odpowiedz o
                 WHERE pytanie_id=%s;
             """, [question_id])

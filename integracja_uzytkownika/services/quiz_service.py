@@ -15,7 +15,7 @@ class QuizService:
         selected = random.sample(rows, count)
         quiz = []
 
-        for q in selected:
+        for q in selected: #q ma id i tresc
             answers = QuizRepository.get_answers_for_question(q[0])
             quiz.append({
                 **map_question_row(q),
