@@ -30,8 +30,8 @@ class OcenaArtykuluRepository:
             cursor.execute("""
                            SELECT id,ocena,data,artykul_id,uzytkownik_id
                            FROM integracja_uzytkownika_ocenaartykulu
-						   WHERE artykul_id = %s AND uzytkownik_id = %s
-                           GROUP BY artykul_id;
+						   WHERE artykul_id = %s AND uzytkownik_id = %s;
+                           
                            """,[artykul_id,uzytkownik_id])
             
             return cursor.fetchone()

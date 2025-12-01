@@ -1,22 +1,37 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from integracja_uzytkownika.services.progress_pytan_service import ProgressPytanService
 from statystyki.services.statystyki_pytania_service import StatystykiPytaniaService
-from statystyki.api.serializers import (StatystykaUpdateInputSerializer,StatystykiPytaniaSerializer)
+from statystyki.api.serializers import (StatystykaUpdateInputSerializer, StatystykiPytaniaSerializer)
+
+
+statystyki_pytania_schema = openapi.Response("Obiekt Statystyki Pytania.", schema=StatystykiPytaniaSerializer)
 
 
 class StatystykiPytaniaAPIView(APIView):
+    """
+    ZARZĄDZANIE STATYSTYKAMI PYTAŃ (GLOBALNYMI)
+    
+    Endpoint służy do pobierania globalnych statystyk pytania (GET) 
+    """
     service_stats = StatystykiPytaniaService()
     service_progress = ProgressPytanService()
     
     def get_permissions(self):
         if self.request.method == 'GET':
             return [AllowAny()]
-        return [IsAuthenticated()]
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca globalne statystyki dla pytania (ilość odpowiedzi, % poprawnych). Dostępne publicznie.",
+        responses={
+            status.HTTP_200_OK: statystyki_pytania_schema,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono statystyk (zwracane są puste statystyki 200 OK)."
+        }
+    )
     def get(self, request, pytanie_id):
         stats = self.service_stats.pobierz_statystyki(pytanie_id)
         
@@ -25,7 +40,31 @@ class StatystykiPytaniaAPIView(APIView):
             return Response(StatystykiPytaniaSerializer(puste_dane).data, status=status.HTTP_200_OK)
 
         return Response(StatystykiPytaniaSerializer(stats).data, status=status.HTTP_200_OK)
+
+
+class StatystykiPytaniaEdytujAPIView(APIView):
+    """
+    ZARZĄDZANIE STATYSTYKAMI PYTAŃ (GLOBALNYMI)
     
+    Endpoint służy do rejestrowania 
+    odpowiedzi użytkownika (POST) w trybie nauki.
+    
+    Ważne: Metoda POST aktualizuje statystyki GLOBALNE tylko przy PIERWSZEJ OSTATECZNEJ próbie odpowiedzi użytkownika.
+    """
+    service_stats = StatystykiPytaniaService()
+    service_progress = ProgressPytanService()
+    
+    def get_permissions(self):
+        return [IsAuthenticated()]
+    
+    @swagger_auto_schema(
+        operation_description="REJESTRACJA ODPOWIEDZI: Rejestruje odpowiedź użytkownika w trybie nauki. Aktualizuje postęp użytkownika (OP/OZ) oraz warunkowo aktualizuje statystyki GLOBALNE (tylko przy pierwszej próbie).",
+        request_body=StatystykaUpdateInputSerializer,
+        responses={
+            status.HTTP_200_OK: statystyki_pytania_schema,
+            status.HTTP_400_BAD_REQUEST: "Błąd walidacji danych wejściowych."
+        }
+    )
     def post(self, request):
         serializer = StatystykaUpdateInputSerializer(data=request.data) 
         

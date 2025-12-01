@@ -35,6 +35,10 @@ class OdpowiedzSerializer(serializers.Serializer):
     text = serializers.CharField(allow_blank=False)
     correct = serializers.BooleanField(required=True)
 
+class QuizOdpowiedzSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    tresc = serializers.CharField(allow_blank=False)
+
 class RozdzialSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     nazwa_rozdzialu = serializers.CharField()

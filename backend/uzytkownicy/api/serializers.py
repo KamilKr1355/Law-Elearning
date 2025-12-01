@@ -31,3 +31,12 @@ class UserSerializerWithToken(UserSerializer):
     def get_token(self,obj):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
+    
+class RegisterUserInputSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(
+        write_only=True, 
+        required=True, 
+        min_length=8 
+    )

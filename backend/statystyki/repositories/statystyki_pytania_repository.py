@@ -7,7 +7,7 @@ class StatystykiPytaniaRepository:
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT id, pytanie_id, ilosc_odpowiedzi, poprawne_odpowiedzi
-                FROM integracja_uzytkownika_statystykipytania
+                FROM statystyki_statystykipytania
                 WHERE pytanie_id = %s;
             """, [pytanie_id])
             return cursor.fetchone()
@@ -18,7 +18,7 @@ class StatystykiPytaniaRepository:
         
         with connection.cursor() as cursor:
             cursor.execute("""
-                UPDATE integracja_uzytkownika_statystykipytania
+                UPDATE statystyki_statystykipytania
                 SET ilosc_odpowiedzi = ilosc_odpowiedzi + 1,
                     poprawne_odpowiedzi = poprawne_odpowiedzi + %s
                 WHERE pytanie_id = %s
@@ -31,7 +31,7 @@ class StatystykiPytaniaRepository:
                 return result[0] 
 
             cursor.execute("""
-                INSERT INTO integracja_uzytkownika_statystykipytania 
+                INSERT INTO statystyki_statystykipytania 
                 (pytanie_id, ilosc_odpowiedzi, poprawne_odpowiedzi)
                 VALUES (%s, 1, %s)
                 RETURNING id;
@@ -43,6 +43,6 @@ class StatystykiPytaniaRepository:
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT id, pytanie_id, ilosc_odpowiedzi, poprawne_odpowiedzi
-                FROM integracja_uzytkownika_statystykipytania WHERE id = %s;
+                FROM statystyki_statystykipytania WHERE id = %s;
             """, [id])
             return cursor.fetchone()

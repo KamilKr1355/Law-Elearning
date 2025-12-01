@@ -6,6 +6,6 @@ def map_question_row(row):
 
 def map_answer_row(row):
     return {
-        "text": row[0],
-        "correct": row[1]
+        "id": row[0],
+        "tresc": row[1]
     }
