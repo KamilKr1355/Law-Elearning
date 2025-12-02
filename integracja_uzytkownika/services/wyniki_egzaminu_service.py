@@ -16,6 +16,14 @@ class WynikEgzaminuService:
         rows = WynikiEgzaminuRepository.get_by_uzytkownik(uzytkownik_id)
         return [map_wyniki_row(r) for r in rows]
     
+    def get_all(self):
+        rows = WynikiEgzaminuRepository.get_all()
+        return [map_wyniki_row(r) for r in rows]
+    
+    def get_all_by_kurs(self,kurs_id):
+        rows = WynikiEgzaminuRepository.get_all_by_kurs(kurs_id)
+        return [map_wyniki_row(r) for r in rows]
+    
     def get_by_uzytkownik_and_kurs(self, uzytkownik_id, kurs_id):
         rows = WynikiEgzaminuRepository.get_by_uzytkownik_and_kurs(uzytkownik_id, kurs_id)
         return [map_wyniki_row(r) for r in rows]

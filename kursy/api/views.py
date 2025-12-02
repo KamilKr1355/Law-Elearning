@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from rest_framework import status
 from .serializers import(KursSerializer,ArtykulViewSerializer,
                          ArtykulSerializer,
-                         RozdzialSerializer,PytaniaSerializer,OdpowiedziSerializer)
+                         RozdzialSerializer,ArtykulRozdzial2Serializer,PytaniaSerializer,OdpowiedziSerializer,ArtykulRozdzialSerializer)
 from rest_framework.views import APIView
 from kursy.services.kurs_service import KursService
 from kursy.services.artykul_service import ArtykulService
@@ -18,9 +18,11 @@ kurs_schema_response = openapi.Response("Szczegóły kursu.", KursSerializer)
 lista_kursow_schema_response = openapi.Response("Lista kursów.", KursSerializer(many=True))
 
 artykul_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulSerializer)
+lista_artykulow_rozdzial_schema_response = openapi.Response("Lista artykułów w danym rozdziale.", ArtykulRozdzialSerializer(many=True))
 lista_artykulow_schema_response = openapi.Response("Lista kursów.", ArtykulSerializer(many=True))
 artykulView_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulViewSerializer)
-lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulViewSerializer(many=True))
+artykulView_schema_response2 = openapi.Response("Szczegóły artykulu wraz z tytulem.", ArtykulRozdzial2Serializer)
+lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulRozdzial2Serializer)
 
 rozdzial_schema_response = openapi.Response("Szczegóły rozdziału.", RozdzialSerializer)
 lista_rozdzial_schema_response = openapi.Response("Lista rozdziałów.", RozdzialSerializer(many=True))
@@ -211,6 +213,38 @@ class ArtykulyAPIView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ArtykulyRozdzialAPIView(APIView):
+    """
+    ZWRACANIE ARTYKULOW PO ID ROZDZIALU (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie wszystkich artykułów KONKRETNEGO ROZDZIALU (GET), 
+    
+    Publiczne trasy: GET.
+    """
+    service = ArtykulService()
+
+    def get_permissions(self):
+        return [AllowAny()]
+    #permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca liste artykułów danego rozdziału",
+        responses={
+            status.HTTP_200_OK: lista_artykulow_rozdzial_schema_response,
+            status.HTTP_404_NOT_FOUND: "Brak artykułów"
+        }
+    )
+    def get(self, request, rozdzial_id):
+        artykuly = self.service.get_by_rozdzial(rozdzial_id)
+        
+        if not artykuly:
+            return Response(
+                {"error": "Brak artykułów"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(ArtykulRozdzialSerializer(artykuly, many=True).data,status=status.HTTP_200_OK)
+    
 
 class ArtykulySzczegolyAPIView(APIView):
     """
@@ -280,6 +314,38 @@ class ArtykulySzczegolyAPIView(APIView):
             return Response({"message": f"Artykuł {id} usunięty."}, status=status.HTTP_200_OK)
         return Response({"error": "Nie znaleziono artykułu"}, status=status.HTTP_404_NOT_FOUND)
 
+class ArtykulyGetAPIView(APIView):
+    """
+    ZARZĄDZANIE ARTYKULEM (ADMIN / PUBLIC)
+    
+    Endpointy umożliwiają przeglądanie konkretnego artykulu przez wszystkich użytkowników (GET), 
+    
+    Publiczne trasy: GET (szczegóły).
+    """
+    service = ArtykulService()
+
+    def get_permissions(self):
+        return [AllowAny()]
+    #permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca szczegóły artykułu wraz z tytułem artykułu po id",
+        responses={
+            status.HTTP_200_OK: artykulView_schema_response2,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono artykułu"
+        }
+    )
+    def get(self, request, id):
+        artykul = self.service.get_one_with_title(id)
+        if not artykul:
+            return Response(
+                {"error": "Brak artykułu"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(ArtykulRozdzial2Serializer(artykul, many=False).data,status=status.HTTP_200_OK)
+    
+    
 class RozdzialyListaAPIView(APIView):
     """
     ZARZĄDZANIE ROZDZIALAMI (ADMIN / PUBLIC)

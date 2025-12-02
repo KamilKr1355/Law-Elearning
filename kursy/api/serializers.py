@@ -21,6 +21,21 @@ class ArtykulSerializer(serializers.Serializer):
     nr_artykulu = serializers.CharField(max_length=10)
     rozdzial_id = serializers.IntegerField(required=False)
 
+class ArtykulRozdzialSerializer(serializers.Serializer):
+    artykul_id = serializers.IntegerField(read_only=True)
+    tytul = serializers.CharField(required=True,allow_blank=False)
+    tresc = serializers.CharField(required=True,allow_blank=False)
+    nazwa_kursu = serializers.CharField(max_length=50,required=True)
+    kurs_id = serializers.IntegerField(read_only=True)
+    rozdzial_id = serializers.IntegerField(required=False)
+
+class ArtykulRozdzial2Serializer(serializers.Serializer):
+    artykul_id = serializers.IntegerField(read_only=True)
+    tytul = serializers.CharField(required=True,allow_blank=False)
+    tresc = serializers.CharField(required=True,allow_blank=False)
+    nazwa_kursu = serializers.CharField(max_length=50,required=True)
+    kurs_id = serializers.IntegerField(read_only=True)
+
 class ArtykulViewSerializer(serializers.Serializer):
     artykul_id = serializers.IntegerField(read_only=True)
     tresc = serializers.CharField(required=True,allow_blank=False)

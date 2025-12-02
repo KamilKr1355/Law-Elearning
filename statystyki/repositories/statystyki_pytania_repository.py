@@ -46,3 +46,18 @@ class StatystykiPytaniaRepository:
                 FROM statystyki_statystykipytania WHERE id = %s;
             """, [id])
             return cursor.fetchone()
+        
+    @staticmethod
+    def pobierz_wszystkie():
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                s.id,p.id AS pytanie_id,
+                COALESCE(s.ilosc_odpowiedzi, 0) AS ilosc_odpowiedzi,
+                COALESCE(s.poprawne_odpowiedzi, 0) AS poprawne_odpowiedzi
+                FROM kursy_pytanie p
+                LEFT JOIN statystyki_statystykipytania s ON p.id = s.pytanie_id
+                ORDER BY
+                COALESCE(s.poprawne_odpowiedzi, 0) / COALESCE(s.ilosc_odpowiedzi, 1)::NUMERIC ASC;
+            """)
+            return cursor.fetchall()

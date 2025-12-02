@@ -34,6 +34,7 @@ class UserSerializerWithToken(UserSerializer):
     
 class RegisterUserInputSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
+    name = serializers.CharField(required=False),
     email = serializers.EmailField(required=False)
     password = serializers.CharField(
         write_only=True, 

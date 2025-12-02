@@ -50,7 +50,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def getUserProfile(request):
     user = request.user
 
@@ -92,6 +92,7 @@ def registerUser(request):
             user = User.objects.create(
                 username = validated_data['username'],
                 email = validated_data['email'],
+                first_name = validated_data.get('name', ''),
                 password = make_password(validated_data['password']) 
             )
 

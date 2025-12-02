@@ -14,6 +14,26 @@ class WynikiEgzaminuRepository:
             return cursor.fetchall()
         
     @staticmethod
+    def get_all():
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, data_zapisu, wynik, kurs_id, uzytkownik_id
+                FROM integracja_uzytkownika_wynikiegzaminu
+                ORDER BY data_zapisu DESC;
+            """)
+            return cursor.fetchall()
+        
+    def get_all_by_kurs(kurs_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, data_zapisu, wynik, kurs_id, uzytkownik_id
+                FROM integracja_uzytkownika_wynikiegzaminu
+                WHERE kurs_id = %s
+                ORDER BY data_zapisu DESC;
+            """,[kurs_id])
+            return cursor.fetchall()
+
+    @staticmethod
     def get_by_id(id):
         with connection.cursor() as cursor:
             cursor.execute("""

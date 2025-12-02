@@ -41,6 +41,34 @@ class StatystykiPytaniaAPIView(APIView):
 
         return Response(StatystykiPytaniaSerializer(stats).data, status=status.HTTP_200_OK)
 
+class StatystykiWszystkichPytanAPIView(APIView):
+    """
+    ZARZĄDZANIE STATYSTYKAMI WSZYSTKICH PYTAŃ (GLOBALNYMI)
+    
+    Endpoint służy do pobierania globalnych statystyk WSZYSTKICH pytan (GET) 
+    """
+    service_stats = StatystykiPytaniaService()
+    service_progress = ProgressPytanService()
+    
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca globalne statystyki wszystkich pytan",
+        responses={
+            status.HTTP_200_OK: statystyki_pytania_schema,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono statystyk"
+        }
+    )
+    def get(self, request):
+        stats = self.service_stats.pobierz_wszystkie_statystyki()
+        
+        if not stats:
+            return Response({"error": "Brak statystyk"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(StatystykiPytaniaSerializer(stats,many=True).data, status=status.HTTP_200_OK)
+
 
 class StatystykiPytaniaEdytujAPIView(APIView):
     """
