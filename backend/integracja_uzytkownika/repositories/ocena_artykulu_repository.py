@@ -41,8 +41,8 @@ class OcenaArtykuluRepository:
     def insertOcena(artykul_id,ocena,uzytkownik_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                           INSERT INTO integracja_uzytkownika_ocenaartykulu (ocena,artykul_id,uzytkownik_id)
-                           VALUES (%s,%s,%s)
+                           INSERT INTO integracja_uzytkownika_ocenaartykulu (ocena,artykul_id,uzytkownik_id,data)
+                           VALUES (%s,%s,%s,NOW())
                            RETURNING id;
                            """,[ocena,artykul_id,uzytkownik_id])
             

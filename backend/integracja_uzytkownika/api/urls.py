@@ -39,6 +39,10 @@ urlpatterns = [
     path('wyniki-egzaminu/', 
         views.WynikiEgzaminuAPIView.as_view(), 
         name="wyniki-egzaminu-lista"),
+
+     path('wyniki-wszystkich-egzaminow/', 
+        views.WynikiWszystkichEgzaminowAPIView.as_view(), 
+        name="wyniki-wszystkich-egzaminow-lista"),
     
     path('wyniki-egzaminu/<int:id>/', 
          views.WynikEgzaminuSzczegolyAPIView.as_view(), 

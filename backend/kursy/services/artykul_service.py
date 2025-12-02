@@ -1,5 +1,7 @@
 from kursy.repositories.artykul_repository import ArtykulRepository
 from kursy.mappers.artykul_mapper import map_artykul_row
+from kursy.mappers.artykul_mapper import map_artykul_row2
+from kursy.mappers.artykul_mapper import map_artykul_row3
 
 class ArtykulService:
 
@@ -10,6 +12,14 @@ class ArtykulService:
     def get_one(self, artykul_id):
         row = ArtykulRepository.get_by_id(artykul_id)
         return map_artykul_row(row) if row else None
+    
+    def get_one_with_title(self, artykul_id):
+        row = ArtykulRepository.get_by_id2(artykul_id)
+        return map_artykul_row3(row) if row else None
+
+    def get_by_rozdzial(self, rozdzial_id):
+        rows = ArtykulRepository.get_by_rozdzial_id(rozdzial_id)
+        return [map_artykul_row2(r) for r in rows] if rows else []
 
     def create(self, tresc,tytul,nr_artykulu,rozdzial_id):
         new_id = ArtykulRepository.insert(tresc,tytul,nr_artykulu,rozdzial_id)

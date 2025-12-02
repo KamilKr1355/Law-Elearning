@@ -6,6 +6,10 @@ class StatystykiPytaniaService:
     def pobierz_statystyki(self, pytanie_id):
         wiersz = StatystykiPytaniaRepository.pobierz_wg_pytania(pytanie_id)
         return map_statystyki_pytania_row(wiersz)
+    
+    def pobierz_wszystkie_statystyki(self):
+        rows = StatystykiPytaniaRepository.pobierz_wszystkie()
+        return [map_statystyki_pytania_row(r) for r in rows]
 
     def aktualizuj_statystyki(self, pytanie_id, is_correct, jest_pierwsza_proba):
         if not jest_pierwsza_proba:

@@ -380,7 +380,8 @@ class KomentarzeAPIView(APIView):
     @swagger_auto_schema(
         operation_description="POBIERANIE: Zwraca listę wszystkich komentarzy dla artykułu.",
         responses={
-            status.HTTP_200_OK: komentarze_list_schema
+            status.HTTP_200_OK: komentarze_list_schema,
+            status.HTTP_404_NOT_FOUND: "Artykuł nie ma komentarzy."
         }
     )
     def get(self,request,artykul_id):
@@ -389,7 +390,7 @@ class KomentarzeAPIView(APIView):
 
         if not komentarze:
             return Response({"message",f"Artykuł {artykul_id} nie ma komentarzy"},
-                            status=status.HTTP_200_OK)
+                            status=status.HTTP_404_NOT_FOUND)
         
         return Response(KomentarzSerializer(komentarze,many=True).data,
                         status=status.HTTP_200_OK)
@@ -526,6 +527,43 @@ class KomentarzSzczegolyAPIView(APIView):
         return Response({"error":"Nie udało się usunąć komentarza"},
                         status=status.HTTP_400_BAD_REQUEST)
     
+class WynikiWszystkichEgzaminowAPIView(APIView):
+    """
+    WYNIKI EGZAMINÓW (GET LISTA)
+    
+    Zwraca listę wszystkich wyników egzaminów 
+    """
+    permission_classes = [IsAuthenticated]
+    service = WynikEgzaminuService()
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca listę wszystkich wyników egzaminów użytkownika. Opcjonalnie filtruje po kurs_id.",
+        manual_parameters=[
+            openapi.Parameter('kurs_id', openapi.IN_QUERY, description="Opcjonalny ID kursu do filtrowania wyników.", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            status.HTTP_200_OK: wyniki_list_schema
+        }
+    )
+    def get(self, request):
+        kurs_id = request.query_params.get('kurs_id')
+        
+        if kurs_id:
+            wyniki = self.service.get_all_by_kurs(kurs_id)
+        else:
+            wyniki = self.service.get_all()
+        
+        if not wyniki:
+            return Response(
+                {"message": "Brak wyników egzaminów"},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            WynikiEgzaminuSerializer(wyniki, many=True).data,
+            status=status.HTTP_200_OK
+        )
+
 class WynikiEgzaminuAPIView(APIView):
     """
     WYNIKI EGZAMINÓW (GET LISTA)
@@ -537,7 +575,7 @@ class WynikiEgzaminuAPIView(APIView):
     service = WynikEgzaminuService()
 
     @swagger_auto_schema(
-        operation_description="POBIERANIE: Zwraca listę wszystkich wyników egzaminów użytkownika. Opcjonalnie filtruje po kurs_id.",
+        operation_description="POBIERANIE: Zwraca listę wszystkich wyników egzaminów zalogowanego użytkownika. Opcjonalnie filtruje po kurs_id.",
         manual_parameters=[
             openapi.Parameter('kurs_id', openapi.IN_QUERY, description="Opcjonalny ID kursu do filtrowania wyników.", type=openapi.TYPE_INTEGER),
         ],

@@ -16,7 +16,25 @@ class ArtykulRepository:
                     [artykul_id]
                 )
                 return cursor.fetchone()
+
+    @staticmethod
+    def get_by_id2(artykul_id):
+        with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT artykul_id,tytul,tresc,nazwa_kursu,kurs_id FROM artykul_rozdzial_view WHERE artykul_id=%s;",
+                    [artykul_id]
+                )
+                return cursor.fetchone()
         
+    @staticmethod
+    def get_by_rozdzial_id(rozdzial_id):
+        with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT artykul_id,tytul,tresc,nazwa_kursu,kurs_id,rozdzial_id FROM artykul_rozdzial_view WHERE rozdzial_id=%s;",
+                    [rozdzial_id]
+                )
+                return cursor.fetchall()
+
     @staticmethod    
     def insert(tresc,tytul,nr_artykulu,rozdzial_id):
           with connection.cursor() as cursor:
