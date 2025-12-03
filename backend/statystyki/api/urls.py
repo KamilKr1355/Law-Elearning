@@ -14,5 +14,14 @@ urlpatterns = [
     path('update/',
          views.StatystykiPytaniaEdytujAPIView.as_view(),
          name="statystyki-pytania-update"),
+
+     path('kursy-dni/',
+         views.KursyDniAPIView.as_view(), 
+         name="statystyki-egzaminy=w-7-dni"),
+
+     path('leaderboard/',
+         views.LeaderboardAPIView.as_view(), 
+         name="leaderboard"),
+   
     
 ]
