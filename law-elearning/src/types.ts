@@ -123,3 +123,13 @@ export interface KursProgress {
     progress_percentage: number;
   }
 }
+
+export interface KursDni {
+    dzien: string;        // "2025-11-27"
+    liczba_kursow: number; 
+}
+
+export interface LeaderboardEntry {
+    username: string;
+    srednia: number;
+}

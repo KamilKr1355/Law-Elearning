@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Spinner, Badge } from '../components/UI';
-import { kursService, authService, contentAdminService, wynikiService } from '../services/api';
+import { kursService, authService, contentAdminService, wynikiService, raportService } from '../services/api';
 import { Link, useParams } from 'react-router-dom';
-import type { Kurs, Rozdzial, Artykul, Pytanie, Odpowiedz, WynikEgzaminu, StatystykiPytania } from '../types';
+import type { Kurs, Rozdzial, Artykul, Pytanie, Odpowiedz, WynikEgzaminu, StatystykiPytania, KursDni } from '../types';
 import { isUserAdmin } from '../utils/auth';
 
 const AdminLayout = ({ title, children, actions, backLink }: any) => (
@@ -21,30 +21,25 @@ const AdminLayout = ({ title, children, actions, backLink }: any) => (
 
 // ------------------- DASHBOARD -------------------
 export const AdminDashboard = () => {
-  // Real stats based on 'WynikiEgzaminu' (ALL USERS)
+  // Real stats based on '/statystyki/kursy-dni/'
   const [stats, setStats] = useState<{label: string, value: number}[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Używamy getAllAdmin, żeby wykres pokazywał ruch wszystkich, a nie tylko Twój
-    wynikiService.getAllAdmin().then(data => {
-        // Safe array
-        const results = Array.isArray(data) ? data : [];
+    // Pobieramy gotowe statystyki z nowego endpointu
+    wynikiService.getStatsLast7Days().then(data => {
+        // Safe array check
+        const rawData = Array.isArray(data) ? data : [];
         
-        // Generate last 7 days labels
-        const last7Days = [...Array(7)].map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split('T')[0]; // YYYY-MM-DD
-        });
-
-        const chartData = last7Days.map(dateStr => {
-            // Count results that start with this date string
-            const count = results.filter(w => w.data_zapisu && w.data_zapisu.startsWith(dateStr)).length;
-            const labelDate = new Date(dateStr);
-            // Format label as "DD.MM" (e.g., 02.12)
-            const label = `${String(labelDate.getDate()).padStart(2, '0')}.${String(labelDate.getMonth() + 1).padStart(2, '0')}`;
-            return { label, value: count };
+        // Mapujemy odpowiedź API (dzien, liczba_kursow) na format wykresu (label, value)
+        const chartData = rawData.map((item: any) => {
+            // Zakładam, że data jest w formacie "YYYY-MM-DD"
+            const dateObj = new Date(item.dzien);
+            const label = `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            return {
+                label: label,
+                value: item.liczba_kursow
+            };
         });
 
         setStats(chartData);

@@ -4,7 +4,7 @@ import type {
   User, Kurs, Rozdzial, ArtykulView, Notatka, Komentarz, 
   QuizQuestion, WynikEgzaminu, 
   Artykul, Pytanie, Odpowiedz, ZapisArtykulu, OcenaArtykuluCombined,
-  KursProgress, StatystykiPytania
+  KursProgress, StatystykiPytania, KursDni, LeaderboardEntry
 } from '../types';
 
 // Konfiguracja adresu API
@@ -285,6 +285,16 @@ export const wynikiService = {
     const response = await api.get('/statystyki/pytania/');
     return response.data;
   },
+  // NOWY ENDPOINT: Wykres 7 dni
+  getStatsLast7Days: async (): Promise<KursDni[]> => {
+    const response = await api.get('/statystyki/kursy-dni/');
+    return response.data;
+  },
+  // NOWY ENDPOINT: Leaderboard
+  getLeaderboard: async (): Promise<LeaderboardEntry[]> => {
+    const response = await api.get('/statystyki/leaderboard/');
+    return response.data;
+  },
   getCourseAverage: async (kursId: string) => {
     const response = await api.get(`/aktywnosc/wyniki-egzaminu/srednia-kursu/${kursId}/`);
     return response.data;
@@ -292,7 +302,12 @@ export const wynikiService = {
 };
 
 export const raportService = {
-    // Placeholder - not used anymore
+    getPopularArticles: async () => {
+        return []; 
+    },
+    getQuestionStats: async () => {
+        return [];
+    }
 };
 
 export default api;
