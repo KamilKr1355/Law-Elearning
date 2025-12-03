@@ -372,12 +372,29 @@ export const AdminArtykuly = () => {
 
   const fetchData = async () => {
     if (!kursId) return;
-    const [arts, rozds] = await Promise.all([
-      kursService.getArtykuly(kursId),
-      kursService.getRozdzialy(kursId)
-    ]);
-    setArtykuly(Array.isArray(arts) ? arts : []);
-    setRozdzialy(Array.isArray(rozds) ? rozds : []);
+
+    // Load chapters independently
+    try {
+        const rozds = await kursService.getRozdzialy(kursId);
+        setRozdzialy(Array.isArray(rozds) ? rozds : []);
+    } catch (e) {
+        setRozdzialy([]);
+    }
+
+    // Load articles and deduplicate based on artykul_id if available
+    try {
+        const arts = await kursService.getArtykuly(kursId);
+        if (Array.isArray(arts)) {
+            // Deduplication logic: use Map with artykul_id (if available) or id as key
+            // This fixes the issue where backend returns identical 'id': 1 for all items
+            const uniqueArts = Array.from(new Map(arts.map(item => [item.artykul_id || item.id, item])).values());
+            setArtykuly(uniqueArts);
+        } else {
+            setArtykuly([]);
+        }
+    } catch (e) {
+        setArtykuly([]);
+    }
   };
 
   useEffect(() => { fetchData(); }, [kursId]);
@@ -393,6 +410,7 @@ export const AdminArtykuly = () => {
       rozdzial_id: currentArt.rozdzial_id || (rozdzialy.length > 0 ? rozdzialy[0].id : 0)
     };
 
+    // Use proper ID for update (prefer id from edit state)
     if (currentArt.id) {
       await kursService.updateArtykul(currentArt.id, payload);
     } else {
@@ -411,17 +429,33 @@ export const AdminArtykuly = () => {
   };
 
   const handleEdit = async (art: any) => {
-    const detail = await kursService.getArtykulDetail(art.id.toString());
-    setCurrentArt({
-      id: detail.id,
-      tytul: detail.tytul,
-      tresc: detail.tresc,
-      // @ts-ignore
-      nr_artykulu: detail.nr_artykulu || '1', 
-      // @ts-ignore
-      rozdzial_id: detail.rozdzial_id || (rozdzialy.length > 0 ? rozdzialy[0].id : 0)
-    });
-    setIsEditing(true);
+    // Determine the ID to use for fetching details and updating
+    // If we have artykul_id, that's likely the real PK
+    const realId = art.artykul_id || art.id;
+    
+    try {
+        const detail = await kursService.getArtykulDetail(realId.toString());
+        setCurrentArt({
+          id: detail.id,
+          tytul: detail.tytul,
+          tresc: detail.tresc,
+          // @ts-ignore
+          nr_artykulu: detail.nr_artykulu || '1', 
+          // @ts-ignore
+          rozdzial_id: detail.rozdzial_id || (rozdzialy.length > 0 ? rozdzialy[0].id : 0)
+        });
+        setIsEditing(true);
+    } catch (e) {
+        // Fallback if detail fetch fails, use list data
+        setCurrentArt({
+          id: realId,
+          tytul: art.tytul,
+          tresc: art.tresc,
+          nr_artykulu: art.nr_artykulu || '1', 
+          rozdzial_id: art.rozdzial_id || (rozdzialy.length > 0 ? rozdzialy[0].id : 0)
+        });
+        setIsEditing(true);
+    }
   };
 
   return (
@@ -467,21 +501,26 @@ export const AdminArtykuly = () => {
       )}
 
       <div className="space-y-3">
-        {artykuly.map(a => (
-          <Card key={a.id} className="flex justify-between items-center py-3">
-             <div>
-               <span className="text-xs text-gray-500 block">ID: {a.id}</span>
-               <span className="font-medium">{a.tytul || `Artykuł ${a.id}`}</span>
-             </div>
-             <div className="space-x-2">
-                <Link to={`/admin/artykuly/${a.id}/pytania`}>
-                  <Button variant="secondary" className="text-xs">Pytania</Button>
-                </Link>
-                <Button variant="ghost" onClick={() => handleEdit(a)}>Edytuj</Button>
-                <Button variant="danger" onClick={() => handleDelete(a.id)}>Usuń</Button>
-             </div>
-          </Card>
-        ))}
+        {artykuly.map(a => {
+            // Determine display ID and key
+            const displayId = a.artykul_id || a.id;
+            return (
+              <Card key={displayId} className="flex justify-between items-center py-3">
+                 <div>
+                   <span className="text-xs text-gray-500 block">ID: {displayId}</span>
+                   {/* Ensures title is displayed if available */}
+                   <span className="font-medium">{a.tytul || `Artykuł ${displayId}`}</span>
+                 </div>
+                 <div className="space-x-2">
+                    <Link to={`/admin/artykuly/${displayId}/pytania`}>
+                      <Button variant="secondary" className="text-xs">Pytania</Button>
+                    </Link>
+                    <Button variant="ghost" onClick={() => handleEdit(a)}>Edytuj</Button>
+                    <Button variant="danger" onClick={() => handleDelete(displayId)}>Usuń</Button>
+                 </div>
+              </Card>
+            );
+        })}
       </div>
     </AdminLayout>
   );
@@ -580,12 +619,18 @@ export const AdminOdpowiedzi = () => {
   const [odpowiedzi, setOdpowiedzi] = useState<Odpowiedz[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentOdp, setCurrentOdp] = useState<Partial<Odpowiedz>>({ tresc: '', poprawna: false });
+  const [parentPytanie, setParentPytanie] = useState<Pytanie | null>(null);
 
   const fetchData = async () => {
     if (!pytanieId) return;
     try {
+      // Fetch answers
       const data = await contentAdminService.getOdpowiedzi(parseInt(pytanieId));
       setOdpowiedzi(Array.isArray(data) ? data : []);
+      
+      // Fetch parent question to know where to go back
+      const pytData = await contentAdminService.getPytanie(parseInt(pytanieId));
+      setParentPytanie(pytData);
     } catch (e) {
       console.error(e);
       setOdpowiedzi([]);
@@ -619,7 +664,7 @@ export const AdminOdpowiedzi = () => {
   return (
     <AdminLayout 
       title={`Odpowiedzi do pytania ID: ${pytanieId}`} 
-      backLink="#"
+      backLink={parentPytanie ? `/admin/artykuly/${parentPytanie.artykul_id}/pytania` : '/admin/kursy'}
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Odpowiedź</Button>}
     >
       {isEditing && (
@@ -681,19 +726,20 @@ export const AdminReports = () => {
   const [questionStats, setQuestionStats] = useState<any[]>([]);
   const [userMap, setUserMap] = useState<{[key:number]: string}>({});
   const [loading, setLoading] = useState(false);
+  
+  // Sorting state for questions
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     setLoading(true);
     const fetchData = async () => {
         try {
             if (activeTab === 'wyniki') {
-                // Pobieramy wyniki WSZYSTKICH (getAllAdmin) oraz listę userów do mapowania nazw
                 const [allResults, allUsers] = await Promise.all([
                     wynikiService.getAllAdmin(),
                     authService.getUsers()
                 ]);
                 
-                // Mapa UserID -> Username
                 const uMap: {[key:number]: string} = {};
                 if (Array.isArray(allUsers)) {
                     allUsers.forEach((u: any) => uMap[u.id] = u.username);
@@ -702,10 +748,9 @@ export const AdminReports = () => {
 
                 setResults(Array.isArray(allResults) ? allResults : []);
             } else if (activeTab === 'kursy_stats') {
-                // Calculate Real Course Stats
                 const [kursy, wyniki] = await Promise.all([
                     kursService.getAll(),
-                    wynikiService.getAllAdmin() // Używamy wszystkich wyników
+                    wynikiService.getAllAdmin()
                 ]);
                 
                 const safeKursy = Array.isArray(kursy) ? kursy : [];
@@ -725,26 +770,24 @@ export const AdminReports = () => {
                 });
                 setCourseStats(stats);
             } else if (activeTab === 'trudnosc') {
-                // Nowa logika: Pobierz pytania i WSZYSTKIE statystyki równolegle
                 const [pytania, allStats] = await Promise.all([
                     kursService.getAllPytania(),
-                    wynikiService.getAllStats() // Nowy endpoint
+                    wynikiService.getAllStats()
                 ]);
                 
                 const safePytania = Array.isArray(pytania) ? pytania : [];
                 const safeStats = Array.isArray(allStats) ? allStats : [];
 
-                // Mapa statystyk po pytanie_id dla szybkiego dostępu
                 const statsMap: {[key: number]: StatystykiPytania} = {};
                 safeStats.forEach((s: StatystykiPytania) => {
                     statsMap[s.pytanie_id] = s;
                 });
 
-                // Łączenie danych
                 const stats = safePytania.map((p: Pytanie) => {
                     const s = statsMap[p.id];
                     return {
                         id: p.id,
+                        artykul_id: p.artykul_id,
                         tresc: p.tresc,
                         ilosc: s ? s.ilosc_odpowiedzi : 0,
                         poprawne: s ? s.poprawne_odpowiedzi : 0,
@@ -752,7 +795,7 @@ export const AdminReports = () => {
                     };
                 });
                 
-                // Sortuj od najtrudniejszych (najmniejszy procent)
+                // Initial sort
                 stats.sort((a, b) => a.procent - b.procent);
                 setQuestionStats(stats);
             }
@@ -767,6 +810,28 @@ export const AdminReports = () => {
     };
     fetchData();
   }, [activeTab]);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    setQuestionStats(prev => {
+        const sorted = [...prev].sort((a, b) => {
+            if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+            if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    });
+  };
+
+  const renderSortArrow = (key: string) => {
+      if (!sortConfig || sortConfig.key !== key) return <span className="text-gray-300">↕</span>;
+      return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
 
   return (
     <AdminLayout title="Raporty i Analizy" backLink="/admin">
@@ -854,17 +919,33 @@ export const AdminReports = () => {
            {activeTab === 'trudnosc' && (
              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold select-none">
                     <tr>
-                        <th className="p-4">Treść Pytania</th>
-                        <th className="p-4 text-center">Liczba Prób</th>
-                        <th className="p-4 text-center">Poprawne</th>
-                        <th className="p-4 text-center">Skuteczność</th>
+                        <th className="p-4 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('id')}>
+                            ID {renderSortArrow('id')}
+                        </th>
+                        <th className="p-4 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('artykul_id')}>
+                            Art. ID {renderSortArrow('artykul_id')}
+                        </th>
+                        <th className="p-4 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('tresc')}>
+                            Treść Pytania {renderSortArrow('tresc')}
+                        </th>
+                        <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('ilosc')}>
+                            Próby {renderSortArrow('ilosc')}
+                        </th>
+                        <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('poprawne')}>
+                            Poprawne {renderSortArrow('poprawne')}
+                        </th>
+                        <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('procent')}>
+                            Skuteczność {renderSortArrow('procent')}
+                        </th>
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                     {questionStats.map(d => (
                         <tr key={d.id} className="hover:bg-gray-50">
+                        <td className="p-4">{d.id}</td>
+                        <td className="p-4">{d.artykul_id}</td>
                         <td className="p-4 truncate max-w-md font-medium" title={d.tresc}>{d.tresc}</td>
                         <td className="p-4 text-center">{d.ilosc}</td>
                         <td className="p-4 text-center">{d.poprawne}</td>

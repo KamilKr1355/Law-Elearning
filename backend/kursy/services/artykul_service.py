@@ -7,7 +7,7 @@ class ArtykulService:
 
     def list_all(self,kurs_id):
         rows = ArtykulRepository.get_all(kurs_id)
-        return [map_artykul_row(r) for r in rows]
+        return [map_artykul_row3(r) for r in rows]
 
     def get_one(self, artykul_id):
         row = ArtykulRepository.get_by_id(artykul_id)

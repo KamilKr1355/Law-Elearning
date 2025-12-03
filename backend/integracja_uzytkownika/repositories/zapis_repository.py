@@ -6,7 +6,7 @@ class ZapisRepository:
     def get_zapisane_by_uzytkownik_id(uzytkownik_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, data_zapisu, tresc, tytul
+                SELECT id, data_zapisu, tresc, tytul, artykul_id
                 FROM zapis_uzytkownika_view 
                 WHERE uzytkownik_id = %s
                 ORDER BY data_zapisu DESC;
@@ -17,7 +17,7 @@ class ZapisRepository:
     def get_by_id(id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id, data_zapisu, tresc, tytul
+                SELECT id, data_zapisu, tresc, tytul, artykul_id
                 FROM zapis_uzytkownika_view 
                 WHERE id = %s;
             """, [id])

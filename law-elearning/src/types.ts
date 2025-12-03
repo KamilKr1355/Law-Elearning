@@ -61,6 +61,7 @@ export interface Notatka {
 
 export interface ZapisArtykulu {
     id: number;
+    artykul_id: number; // REQUIRED now
     tytul: string;
     data_zapisu: string;
 }

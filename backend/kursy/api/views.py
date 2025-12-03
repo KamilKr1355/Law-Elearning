@@ -23,6 +23,7 @@ lista_artykulow_schema_response = openapi.Response("Lista kursów.", ArtykulSeri
 artykulView_schema_response = openapi.Response("Szczegóły artykulu.", ArtykulViewSerializer)
 artykulView_schema_response2 = openapi.Response("Szczegóły artykulu wraz z tytulem.", ArtykulRozdzial2Serializer)
 lista_artykulowView_schema_response = openapi.Response("Lista kursów.", ArtykulRozdzial2Serializer)
+lista_artykulowView_schema_response2 = openapi.Response("Lista kursów.", ArtykulRozdzial2Serializer(many=True))
 
 rozdzial_schema_response = openapi.Response("Szczegóły rozdziału.", RozdzialSerializer)
 lista_rozdzial_schema_response = openapi.Response("Lista rozdziałów.", RozdzialSerializer(many=True))
@@ -173,9 +174,9 @@ class ArtykulyAPIView(APIView):
     #permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="POBIERANIE: Zwraca liste artykułów",
+        operation_description="POBIERANIE: Zwraca liste artykułów wraz z tytułem artykulu dla danego kursu po id kursu",
         responses={
-            status.HTTP_200_OK: lista_artykulowView_schema_response,
+            status.HTTP_200_OK: lista_artykulowView_schema_response2,
             status.HTTP_404_NOT_FOUND: "Brak artykułów"
         }
     )
@@ -188,7 +189,7 @@ class ArtykulyAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        return Response(ArtykulViewSerializer(artykuly, many=True).data,status=status.HTTP_200_OK)
+        return Response(ArtykulRozdzial2Serializer(artykuly, many=True).data,status=status.HTTP_200_OK)
     
     @swagger_auto_schema(
             operation_description="DODAWANIE (ADMIN): Tworzy nowy artykuł. Wymaga statusu administratora",

@@ -4,4 +4,6 @@ def map_zapis_row(row):
         "data_zapisu": row[1],
         "tresc": row[2].strip() if row[2] else "",
         "tytul": row[3].strip() if row[3] else "",
+        "artykul_id": row[4],
+
     }

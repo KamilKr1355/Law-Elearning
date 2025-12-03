@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { aktywnoscService } from '../services/api';
-import type { Notatka } from '../types';
+import type { Notatka, ZapisArtykulu } from '../types';
 import { Card, Button, Spinner } from '../components/UI';
 
 export const MojeNotatki = () => {
@@ -85,20 +85,23 @@ export const MojeNotatki = () => {
 };
 
 export const ZapisaneArtykuly = () => {
-  const [zapisane, setZapisane] = useState<any[]>([]);
+  const [zapisane, setZapisane] = useState<ZapisArtykulu[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchZapisane = () => {
     aktywnoscService.getZapisane()
-      .then(setZapisane)
+      .then(data => {
+          setZapisane(Array.isArray(data) ? data : []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchZapisane(); }, []);
 
-  const handleRemove = async (id: number) => {
-    await aktywnoscService.deleteZapis(id);
+  const handleRemove = async (artykulId: number) => {
+    // API delete uses artykul_id as param
+    await aktywnoscService.deleteZapis(artykulId);
     fetchZapisane();
   };
 
@@ -125,8 +128,10 @@ export const ZapisaneArtykuly = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <Link to={`/artykul/${item.id}`}><Button variant="secondary">Czytaj</Button></Link>
-                <button onClick={() => handleRemove(item.id)} className="text-gray-400 hover:text-red-500 transition">✕</button>
+                {/* Używamy artykul_id do linku, a nie ID zakładki */}
+                <Link to={`/artykul/${item.artykul_id || '#'}`}><Button variant="secondary">Czytaj</Button></Link>
+                {/* Używamy artykul_id do usunięcia */}
+                <button onClick={() => handleRemove(item.artykul_id)} className="text-gray-400 hover:text-red-500 transition" title="Usuń z zapisanych">✕</button>
               </div>
             </Card>
           ))}

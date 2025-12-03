@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { kursService, aktywnoscService, contentAdminService, wynikiService } from '../services/api';
-import type { Kurs, Rozdzial, ArtykulView, Komentarz, Notatka, Pytanie, Odpowiedz, OcenaArtykuluCombined, KursProgress, StatystykiPytania } from '../types';
+import type { Kurs, Rozdzial, ArtykulView, Komentarz, Notatka, Pytanie, Odpowiedz, OcenaArtykuluCombined, KursProgress, StatystykiPytania, ZapisArtykulu } from '../types';
 import { Card, Button, Spinner, Badge, Input } from '../components/UI';
 import { useAuth } from '../context/AuthContext';
 import { isUserAdmin } from '../utils/auth';
@@ -258,11 +258,13 @@ export const ArtykulReader = () => {
                  setKomentarze([]);
              }
 
-             // 3. Zapisane
+             // 3. Zapisane - POPRAWIONE LOGIKA DOPASOWANIA
              try {
-                 const savedList = await aktywnoscService.getZapisane();
-                 if (art && Array.isArray(savedList) && savedList.some((s:any) => s.id === art.id)) {
-                     setIsSaved(true);
+                 const savedList: ZapisArtykulu[] = await aktywnoscService.getZapisane();
+                 if (art && Array.isArray(savedList)) {
+                     // Teraz backend zwraca artykul_id, więc używamy tego do porównania
+                     const isFound = savedList.some((s) => s.artykul_id === art.id);
+                     if (isFound) setIsSaved(true);
                  }
              } catch (e) {}
 
@@ -298,11 +300,16 @@ export const ArtykulReader = () => {
 
   const handleToggleSave = async () => {
       if (!id) return;
+      // Używamy ID z URL (które jest ID artykułu) do operacji
+      const articleId = parseInt(id);
+      
       if (isSaved) {
-          await aktywnoscService.deleteZapis(parseInt(id));
+          // API DELETE oczekuje ID artykułu w URL
+          await aktywnoscService.deleteZapis(articleId);
           setIsSaved(false);
       } else {
-          await aktywnoscService.addZapis(parseInt(id));
+          // API POST oczekuje { artykul_id: ... }
+          await aktywnoscService.addZapis(articleId);
           setIsSaved(true);
       }
   };

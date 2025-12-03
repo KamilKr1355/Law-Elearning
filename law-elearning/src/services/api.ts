@@ -149,6 +149,11 @@ export const contentAdminService = {
     const response = await api.get(`/kursy/pytania/artykul/${artykulId}/`);
     return response.data;
   },
+  // NOWE: Pobieranie pojedynczego pytania (do nawigacji wstecz w adminie)
+  getPytanie: async (id: number) => {
+    const response = await api.get(`/kursy/pytania/zmien/${id}/`);
+    return response.data;
+  },
   createPytanie: async (data: any) => {
     const response = await api.post('/kursy/pytania/', data);
     return response.data;
