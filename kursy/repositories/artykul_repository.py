@@ -5,7 +5,7 @@ class ArtykulRepository:
     @staticmethod
     def get_all(kurs_id):
          with connection.cursor() as cursor:
-                cursor.execute("SELECT artykul_id,tresc,nazwa_kursu,id FROM artykul_kurs_view WHERE id = %s;",[kurs_id])
+                cursor.execute("SELECT artykul_id,tytul,tresc,nazwa_kursu,kurs_id FROM artykul_rozdzial_view WHERE kurs_id = %s;",[kurs_id])
                 return cursor.fetchall()
 
     @staticmethod

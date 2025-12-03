@@ -26,6 +26,7 @@ class ZapisArtykuluSerializer(serializers.Serializer):
     data_zapisu = serializers.DateTimeField(read_only=True)
     tresc = serializers.CharField(read_only=True)
     tytul = serializers.CharField(read_only=True)
+    artykul_id = serializers.IntegerField()
 
 
 class ZapisArtykuluPostSerializer(serializers.Serializer):
