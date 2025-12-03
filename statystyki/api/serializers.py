@@ -17,3 +17,12 @@ class StatystykaUpdateInputSerializer(serializers.Serializer):
     is_correct = serializers.BooleanField(
         help_text="Czy odpowiedź na to pytanie była poprawna (True/False)"
     )
+
+class KursDniSerializer(serializers.Serializer):
+    dzien = serializers.DateField(read_only=True)
+    liczba_kursow = serializers.IntegerField(read_only=True)
+    
+class LeaderboardSerializer(serializers.Serializer):
+    username = serializers.CharField(read_only=True)
+    srednia = serializers.FloatField(read_only=True)
+    

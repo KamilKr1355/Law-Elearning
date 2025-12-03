@@ -6,11 +6,14 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from integracja_uzytkownika.services.progress_pytan_service import ProgressPytanService
 from statystyki.services.statystyki_pytania_service import StatystykiPytaniaService
-from statystyki.api.serializers import (StatystykaUpdateInputSerializer, StatystykiPytaniaSerializer)
+from statystyki.services.leaderboard_service import LeaderboardService
+from statystyki.services.kursy_dni_service import KursyDniService
+from statystyki.api.serializers import (StatystykaUpdateInputSerializer, StatystykiPytaniaSerializer, KursDniSerializer,LeaderboardSerializer)
 
 
 statystyki_pytania_schema = openapi.Response("Obiekt Statystyki Pytania.", schema=StatystykiPytaniaSerializer)
-
+lista_kursy_dni_schema = openapi.Response("Obiekt Kursow w 7 dni.", schema=KursDniSerializer(many=True))
+lista_leaderboard_schema = openapi.Response("Leaderboard", schema=LeaderboardSerializer(many=True))
 
 class StatystykiPytaniaAPIView(APIView):
     """
@@ -122,3 +125,56 @@ class StatystykiPytaniaEdytujAPIView(APIView):
             return Response(StatystykiPytaniaSerializer(zaktualizowane_statystyki).data, status=status.HTTP_200_OK)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class KursyDniAPIView(APIView):
+    """
+    ZARZĄDZANIE LICZBA EGZAMINOW W 7 DNI
+    
+    Endpoint służy do pobierania ile egzaminow zostało ukończonych w ostatnich 7 dniach (GET)
+    
+    """
+    service = KursyDniService()
+    
+    def get_permissions(self):
+        return [IsAuthenticated()]
+    
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca liczbe ukonczonych egzaminow w ostatnich 7 dniach",
+        responses={
+            status.HTTP_200_OK: lista_kursy_dni_schema,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono statystyk"
+        }
+    )
+    def get(self, request):
+        stats = self.service.pobierz_statystyki()
+        
+        if not stats:
+            return Response({"error": "Brak statystyk"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(KursDniSerializer(stats,many=True).data, status=status.HTTP_200_OK)
+    
+class LeaderboardAPIView(APIView):
+    """
+    ZARZĄDZANIE LEADERBOARDEM
+    
+    Endpoint służy do pobierania TOP 3 UZYTKOWNIKOW Z NAJLEPSZA SREDNIA W MINIMUM 10 EGZAMINACH (SREDNIA MUSI BYC >=50%)
+    """
+    service = LeaderboardService()
+    
+    def get_permissions(self):
+        return [IsAuthenticated()]
+    
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca TOP 3 UZYTKOWNIKOW Z NAJLEPSZA SREDNIA W MINIMUM 10 EGZAMINACH (SREDNIA MUSI BYC >=50%)",
+        responses={
+            status.HTTP_200_OK: lista_leaderboard_schema,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono statystyk"
+        }
+    )
+    def get(self, request):
+        stats = self.service.pobierz_wszystkie_statystyki()
+        
+        if not stats:
+            return Response({"error": "Brak statystyk"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(LeaderboardSerializer(stats,many=True).data, status=status.HTTP_200_OK)
