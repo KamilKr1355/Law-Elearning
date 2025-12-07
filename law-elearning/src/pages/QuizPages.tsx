@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { quizService, kursService } from '../services/api';
 import type { QuizQuestion, Kurs } from '../types';
 import { Card, Button, Spinner, Badge } from '../components/UI';
@@ -100,7 +100,7 @@ export const QuizActive = () => {
     
     const formattedAnswers = Object.entries(answers).map(([qid, aid]) => ({
       pytanie_id: parseInt(qid),
-      wybrana_opcja: aid
+      wybrana_opcja: aid as number
     }));
 
     try {

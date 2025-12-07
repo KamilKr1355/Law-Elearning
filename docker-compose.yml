@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # USŁUGA FRONT-ENDU (NGINX + REACT)
+  frontend:
+    build: 
+      context: . 
+      dockerfile: Dockerfile.frontend 
+    container_name: react_frontend
+    ports:
+      - "80:80"  # Główny ruch zewnętrzny
+    depends_on:
+      - web 
+
+  # USŁUGA BACKENDU (DJANGO + GUNICORN)
+  web:
+    build:
+      context: ./backend  # WSKAZANIE NA FOLDER BACKEND
+      dockerfile: Dockerfile  # Zakładamy, że Dockerfile jest w tym folderze
+    container_name: django_backend
+    command: gunicorn --bind 0.0.0.0:8000 elearning_prawo.wsgi:application
+    volumes:
+      - ./backend:/app  # Mapowanie katalogu backendu do /app w kontenerze
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  # USŁUGA BAZY DANYCH
+  db:
+    image: postgres:15-alpine
+    container_name: django_app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

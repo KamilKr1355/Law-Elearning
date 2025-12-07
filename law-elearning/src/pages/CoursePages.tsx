@@ -220,6 +220,10 @@ export const ArtykulReader = () => {
   const [komentarze, setKomentarze] = useState<Komentarz[]>([]);
   const [newComment, setNewComment] = useState('');
   
+  // Edycja komentarza
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
+  
   // Zapisany (Bookmark)
   const [isSaved, setIsSaved] = useState(false);
   
@@ -258,15 +262,13 @@ export const ArtykulReader = () => {
                  setKomentarze([]);
              }
 
-             // 3. Zapisane - POPRAWIONE LOGIKA DOPASOWANIA
+             // 3. Sprawdzanie statusu zapisu (Nowe API)
              try {
-                 const savedList: ZapisArtykulu[] = await aktywnoscService.getZapisane();
-                 if (art && Array.isArray(savedList)) {
-                     // Teraz backend zwraca artykul_id, więc używamy tego do porównania
-                     const isFound = savedList.some((s) => s.artykul_id === art.id);
-                     if (isFound) setIsSaved(true);
-                 }
-             } catch (e) {}
+                 const savedStatus = await aktywnoscService.checkZapis(id);
+                 setIsSaved(savedStatus);
+             } catch (e) {
+                 setIsSaved(false);
+             }
 
              // 4. Oceny
              try {
@@ -300,17 +302,18 @@ export const ArtykulReader = () => {
 
   const handleToggleSave = async () => {
       if (!id) return;
-      // Używamy ID z URL (które jest ID artykułu) do operacji
       const articleId = parseInt(id);
       
-      if (isSaved) {
-          // API DELETE oczekuje ID artykułu w URL
-          await aktywnoscService.deleteZapis(articleId);
-          setIsSaved(false);
-      } else {
-          // API POST oczekuje { artykul_id: ... }
-          await aktywnoscService.addZapis(articleId);
-          setIsSaved(true);
+      try {
+        if (isSaved) {
+            await aktywnoscService.deleteZapis(articleId);
+            setIsSaved(false);
+        } else {
+            await aktywnoscService.addZapis(articleId);
+            setIsSaved(true);
+        }
+      } catch (e) {
+          console.error("Błąd podczas zmiany statusu zapisu", e);
       }
   };
 
@@ -340,12 +343,38 @@ export const ArtykulReader = () => {
       }
   };
 
+  const handleStartEdit = (comment: Komentarz) => {
+      setEditingCommentId(comment.id);
+      setEditingText(comment.tresc);
+  };
+
+  const handleCancelEdit = () => {
+      setEditingCommentId(null);
+      setEditingText('');
+  };
+
+  const handleSaveEdit = async (commentId: number) => {
+      if (!editingText.trim()) return;
+      try {
+          await aktywnoscService.updateKomentarz(commentId, editingText);
+          // Optymistyczna aktualizacja listy
+          setKomentarze(prev => prev.map(c => c.id === commentId ? { ...c, tresc: editingText } : c));
+          setEditingCommentId(null);
+          setEditingText('');
+      } catch (e) {
+          console.error(e);
+          alert('Nie udało się zaktualizować komentarza.');
+      }
+  };
+
   const handleRate = async (rate: number) => {
       if (!id) return;
       setUserRating(rate);
       try {
-          const newStats = await aktywnoscService.setOcena(id, rate);
-          setRatingData(newStats);
+          await aktywnoscService.setOcena(id, rate);
+          // Refetch stats to ensure correct average is displayed
+          const freshStats = await aktywnoscService.getOcena(id);
+          setRatingData(freshStats);
       } catch (e) {
           console.error(e);
       }
@@ -439,7 +468,7 @@ export const ArtykulReader = () => {
                     </span>
                 </div>
              </div>
-             <button onClick={handleToggleSave} className={`text-2xl transition hover:scale-110 ${isSaved ? 'text-yellow-400' : 'text-gray-300'}`} title="Zapisz na później">
+             <button onClick={handleToggleSave} className={`text-2xl transition hover:scale-110 ${isSaved ? 'text-yellow-400' : 'text-gray-300'}`} title={isSaved ? "Usuń z zapisanych" : "Zapisz na później"}>
                  {isSaved ? '★' : '☆'}
              </button>
           </div>
@@ -551,21 +580,51 @@ export const ArtykulReader = () => {
               <div key={k.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 relative group">
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-semibold text-gray-900">{k.username || 'Użytkownik'}</span>
-                  <span className="text-xs text-gray-500">
-                    {k.data_zapisu ? new Date(k.data_zapisu).toLocaleDateString() : ''}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                      {/* Actions left of date */}
+                      {user && (user.username === k.username || isUserAdmin(user)) && !editingCommentId && (
+                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                            {user.username === k.username && (
+                                <button 
+                                    onClick={() => handleStartEdit(k)}
+                                    className="text-gray-400 hover:text-indigo-600 p-1 rounded hover:bg-indigo-50 transition"
+                                    title="Edytuj komentarz"
+                                >
+                                    ✎
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => handleDeleteComment(k.id)}
+                                className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition"
+                                title="Usuń komentarz"
+                            >
+                                🗑
+                            </button>
+                        </div>
+                      )}
+
+                      <span className="text-xs text-gray-500">
+                        {k.data_zapisu ? new Date(k.data_zapisu).toLocaleDateString() : ''}
+                      </span>
+                  </div>
                 </div>
-                <p className="text-gray-700 text-sm">{k.tresc}</p>
                 
-                {/* Delete Button (Visible for Admin OR Owner) */}
-                {user && (isUserAdmin(user) || user.username === k.username) && (
-                    <button 
-                        onClick={() => handleDeleteComment(k.id)}
-                        className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
-                        title="Usuń komentarz"
-                    >
-                        🗑
-                    </button>
+                {/* Editing Mode */}
+                {editingCommentId === k.id ? (
+                    <div className="mt-2 animate-fadeIn">
+                        <textarea 
+                            className="w-full p-2 border rounded-lg text-sm mb-2 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                            rows={3}
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                        />
+                        <div className="flex space-x-2 justify-end">
+                            <Button variant="secondary" onClick={handleCancelEdit} className="text-xs py-1">Anuluj</Button>
+                            <Button onClick={() => handleSaveEdit(k.id)} className="text-xs py-1">Zapisz</Button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-gray-700 text-sm">{k.tresc}</p>
                 )}
               </div>
             ))}

@@ -187,8 +187,9 @@ class MojeZapisaneArtykulyAPIView(APIView):
             zapis = self.service.create(request.user.id, artykul_id)
             
             if not zapis:
+                #self.service.delete(request.user.id, artykul_id)
                 return Response(
-                    {"error": "Artykuł już zapisany"}, 
+                    {"message": "Usunieto zapisanie artykulu"}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -200,7 +201,7 @@ class MojeZapisaneArtykulyAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UsunZapisArtykuluAPIView(APIView):
+class ZarzadzajZapisArtykuluAPIView(APIView):
     """
     USUWANIE ZAPISU ARTYKUŁU (DELETE)
     
@@ -208,7 +209,7 @@ class UsunZapisArtykuluAPIView(APIView):
     """
     permission_classes = [IsAuthenticated]
     service = ZapisService()
-
+    
     @swagger_auto_schema(
         operation_description="USUWANIE: Usuwa zapisany artykuł po ID.",
         responses={
@@ -230,6 +231,23 @@ class UsunZapisArtykuluAPIView(APIView):
             status=status.HTTP_404_NOT_FOUND
         )
 
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca czy zapis istnieje",
+        manual_parameters=[
+            openapi.Parameter('artykul_id', openapi.IN_QUERY, description="Opcjonalny ID artykułu, aby pobrać notatki tylko dla niego.", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            status.HTTP_200_OK: openapi.Response(description="Zwraca czy zapis istnieje."),
+            status.HTTP_204_NO_CONTENT: "Zapis nie istnieje."
+        }
+    )
+    def get(self,request,artykul_id):
+        zapis = self.service.check_exists(request.user.id,artykul_id)
+
+        if not zapis:
+            return Response({"istnieje":False}, status=status.HTTP_204_NO_CONTENT)
+        
+        return Response({"istnieje":True}, status=status.HTTP_200_OK)
 
 class MojeNotatkiApiView(APIView):
     """
@@ -389,7 +407,7 @@ class KomentarzeAPIView(APIView):
         komentarze = self.service.get_by_artykul(artykul_id)
 
         if not komentarze:
-            return Response({"message",f"Artykuł {artykul_id} nie ma komentarzy"},
+            return Response({"message":f"Artykuł {artykul_id} nie ma komentarzy"},
                             status=status.HTTP_404_NOT_FOUND)
         
         return Response(KomentarzSerializer(komentarze,many=True).data,

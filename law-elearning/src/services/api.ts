@@ -8,8 +8,8 @@ import type {
 } from '../types';
 
 // Konfiguracja adresu API
-const API_URL = 'http://127.0.0.1:8000/api';
-
+// const API_URL = 'http://127.0.0.1:8000/api';
+const API_URL = '/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -211,6 +211,11 @@ export const aktywnoscService = {
     const response = await api.post(`/aktywnosc/artykuly/${artykulId}/komentarze/`, { tresc });
     return response.data;
   },
+  // NOWE: Edycja komentarza
+  updateKomentarz: async (id: number, tresc: string) => {
+    const response = await api.put(`/aktywnosc/komentarze/${id}/`, { tresc });
+    return response.data;
+  },
   deleteKomentarz: async (id: number) => {
     const response = await api.delete(`/aktywnosc/komentarze/${id}/`);
     return response.data;
@@ -238,9 +243,24 @@ export const aktywnoscService = {
       return response.data;
   },
 
+  // ZAPISANE (BOOKMARKS)
   getZapisane: async () => {
     const response = await api.get('/aktywnosc/moje-zapisy/');
     return response.data;
+  },
+  // Nowa metoda: Sprawdza status konkretnego artykułu
+  checkZapis: async (artykulId: number | string) => {
+    try {
+        const response = await api.get(`/aktywnosc/moje-zapisy/${artykulId}/`);
+        // API zwraca 200 {"istnieje": true} jeśli jest zapisany
+        // API zwraca 204 (No Content) {"istnieje": false} jeśli nie jest zapisany
+        if (response.status === 200 && response.data?.istnieje) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        return false;
+    }
   },
   addZapis: async (artykulId: number) => {
     const response = await api.post('/aktywnosc/moje-zapisy/', { artykul_id: artykulId });

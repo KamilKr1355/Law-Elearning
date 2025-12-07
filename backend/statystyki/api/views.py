@@ -75,21 +75,13 @@ class StatystykiWszystkichPytanAPIView(APIView):
 
 class StatystykiPytaniaEdytujAPIView(APIView):
     """
-    ZARZĄDZANIE STATYSTYKAMI PYTAŃ (GLOBALNYMI)
-    
-    Endpoint służy do rejestrowania 
-    odpowiedzi użytkownika (POST) w trybie nauki.
-    
-    Ważne: Metoda POST aktualizuje statystyki GLOBALNE tylko przy PIERWSZEJ OSTATECZNEJ próbie odpowiedzi użytkownika.
+    Endpoint: POST /api/statystyki/update/
+    Teraz tylko aktualizuje ProgressPytan - trigger w bazie zajmie się statystykami!
     """
-    service_stats = StatystykiPytaniaService()
-    service_progress = ProgressPytanService()
-    
-    def get_permissions(self):
-        return [IsAuthenticated()]
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
-        operation_description="REJESTRACJA ODPOWIEDZI: Rejestruje odpowiedź użytkownika w trybie nauki. Aktualizuje postęp użytkownika (OP/OZ) oraz warunkowo aktualizuje statystyki GLOBALNE (tylko przy pierwszej próbie).",
+        operation_description="REJESTRACJA ODPOWIEDZI: Rejestruje odpowiedź użytkownika. Trigger w bazie automatycznie aktualizuje statystyki globalne.",
         request_body=StatystykaUpdateInputSerializer,
         responses={
             status.HTTP_200_OK: statystyki_pytania_schema,
@@ -97,34 +89,21 @@ class StatystykiPytaniaEdytujAPIView(APIView):
         }
     )
     def post(self, request):
-        serializer = StatystykaUpdateInputSerializer(data=request.data) 
+        serializer = StatystykaUpdateInputSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        if serializer.is_valid():
-            pytanie_id = serializer.validated_data['pytanie_id']
-            is_correct = serializer.validated_data['is_correct']
-            uzytkownik_id = request.user.id
-            
-            progress_service = self.service_progress 
-            stats_service = self.service_stats
-
-            czy_juz_odpowiedziano = progress_service.sprawdz_czy_odpowiedziano(uzytkownik_id, pytanie_id)
-            jest_pierwsza_proba = not czy_juz_odpowiedziano
-
-            zaktualizowane_statystyki = stats_service.aktualizuj_statystyki(
-                pytanie_id, 
-                is_correct, 
-                jest_pierwsza_proba
-            )
-            
-            progress_service.aktualizuj_postep(
-                uzytkownik_id, 
-                pytanie_id, 
-                is_correct
-            )
-
-            return Response(StatystykiPytaniaSerializer(zaktualizowane_statystyki).data, status=status.HTTP_200_OK)
-            
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        pytanie_id = serializer.validated_data['pytanie_id']
+        is_correct = serializer.validated_data['is_correct']
+        uzytkownik_id = request.user.id
+        
+        progress_service = ProgressPytanService()
+        progress_service.aktualizuj_postep(uzytkownik_id, pytanie_id, is_correct)
+        
+        stats_service = StatystykiPytaniaService()
+        statystyki = stats_service.pobierz_statystyki(pytanie_id)
+        
+        return Response(StatystykiPytaniaSerializer(statystyki).data, status=status.HTTP_200_OK)
     
 class KursyDniAPIView(APIView):
     """

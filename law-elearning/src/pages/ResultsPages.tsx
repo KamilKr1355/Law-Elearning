@@ -13,17 +13,22 @@ export const ResultsHistory = () => {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Wrap fetches in Promise.all to load in parallel, but handle errors individually
+    // so one failure doesn't break the whole page (e.g. leaderboard).
     Promise.all([
-      wynikiService.getAll(),
-      kursService.getAll(),
+      wynikiService.getAll().catch(() => []), // Safe fetch: return empty array on error
+      kursService.getAll().catch(() => []),   // Safe fetch
       wynikiService.getLeaderboard().catch(() => []) // Safe fetch
     ]).then(([wData, kData, lData]) => {
       // Filter results for current user
-      const myResults = user ? wData.filter((w: { uzytkownik_id: number; }) => w.uzytkownik_id === user.id) : wData;
-      myResults.sort((a: { data_zapisu: string | number | Date; }, b: { data_zapisu: string | number | Date; }) => new Date(b.data_zapisu).getTime() - new Date(a.data_zapisu).getTime());
+      // Safe check if wData is array
+      const safeWData = Array.isArray(wData) ? wData : [];
+      const myResults = user ? safeWData.filter(w => w.uzytkownik_id === user.id) : safeWData;
+      
+      myResults.sort((a, b) => new Date(b.data_zapisu).getTime() - new Date(a.data_zapisu).getTime());
       
       setWyniki(myResults);
-      setKursy(kData);
+      setKursy(Array.isArray(kData) ? kData : []);
       if (Array.isArray(lData)) {
           setLeaderboard(lData);
       }
@@ -52,7 +57,7 @@ export const ResultsHistory = () => {
                     <span className="text-xs text-gray-500 uppercase">Twoja Średnia</span>
                     <span className="font-bold text-xl text-indigo-600">
                         {wyniki.length > 0 
-                            ? (wyniki.reduce((acc, curr) => acc + curr.wynik, 0) / wyniki.length).toFixed(0) 
+                            ? (wyniki.reduce((acc, curr) => acc + Number(curr.wynik || 0), 0) / wyniki.length).toFixed(0) 
                             : 0}%
                     </span>
                 </Card>
@@ -82,7 +87,8 @@ export const ResultsHistory = () => {
                                           <span>{medal}</span>
                                           <span className="font-medium text-sm truncate max-w-[120px]">{entry.username}</span>
                                       </div>
-                                      <span className="font-bold text-sm">{entry.srednia.toFixed(1)}%</span>
+                                      {/* FIX: Ensure srednia is treated as a number */}
+                                      <span className="font-bold text-sm">{Number(entry.srednia).toFixed(1)}%</span>
                                   </div>
                               );
                           })
@@ -110,16 +116,16 @@ export const ResultsHistory = () => {
                 <div className="flex items-center space-x-6">
                     <div className="text-right">
                         <span className="block text-xs text-gray-400 uppercase">Wynik</span>
-                        <span className={`text-2xl font-bold ${wynik.wynik >= 50 ? 'text-green-600' : 'text-red-500'}`}>
-                            {Math.round(wynik.wynik)}%
+                        <span className={`text-2xl font-bold ${Number(wynik.wynik) >= 50 ? 'text-green-600' : 'text-red-500'}`}>
+                            {Math.round(Number(wynik.wynik))}%
                         </span>
                     </div>
                     <div className="w-16 h-16 relative flex items-center justify-center">
                         <svg className="w-full h-full transform -rotate-90">
                             <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="6" fill="transparent" />
-                            <circle cx="32" cy="32" r="28" stroke={wynik.wynik >= 50 ? '#10b981' : '#ef4444'} strokeWidth="6" fill="transparent" 
+                            <circle cx="32" cy="32" r="28" stroke={Number(wynik.wynik) >= 50 ? '#10b981' : '#ef4444'} strokeWidth="6" fill="transparent" 
                                     strokeDasharray={175.9} 
-                                    strokeDashoffset={175.9 - (175.9 * wynik.wynik) / 100} />
+                                    strokeDashoffset={175.9 - (175.9 * Number(wynik.wynik)) / 100} />
                         </svg>
                     </div>
                 </div>
