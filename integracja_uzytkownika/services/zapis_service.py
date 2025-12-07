@@ -7,6 +7,10 @@ class ZapisService:
         rows = ZapisRepository.get_zapisane_by_uzytkownik_id(uzytkownik_id)
         return [map_zapis_row(r) for r in rows]
     
+    def check_exists(self, uzytkownik_id, artykul_id):
+        exists = ZapisRepository.check_exists(uzytkownik_id, artykul_id)
+        return exists is not None
+
     def delete(self, uzytkownik_id, artykul_id):
         deleted_id = ZapisRepository.delete(uzytkownik_id, artykul_id)
         return deleted_id is not None

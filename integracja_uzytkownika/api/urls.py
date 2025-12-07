@@ -12,7 +12,7 @@ urlpatterns = [
          name="moje-zapisy"),
     
     path('moje-zapisy/<int:artykul_id>/', 
-         views.UsunZapisArtykuluAPIView.as_view(), 
+         views.ZarzadzajZapisArtykuluAPIView.as_view(), 
          name="usun-zapis"),
 
     # Notatki
