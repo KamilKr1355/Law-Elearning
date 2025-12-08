@@ -33,9 +33,9 @@ SECRET_KEY = 'django-insecure-c66prav2wuq*n3)u9!ma(9*0p0%q6&$ax&oloa(mczj%#z@+9o
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1",'localhost','lawedu-ceb9c4653c6b.herokuapp.com']
+ALLOWED_HOSTS = ["127.0.0.1",'localhost','lawedu-ceb9c4653c6b.herokuapp.com',"127.0.0.1:8000"]
 
 
 # Application definition
@@ -144,7 +144,7 @@ ROOT_URLCONF = 'elearning_prawo.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'law-elearning/dist')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -208,18 +208,24 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_root')
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Zmień na 'staticfiles'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'law-elearning/dist'),
+]
+
+# Dla developmentu — serve static files bezpośrednio
+if DEBUG:
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'law-elearning/dist'),
+    ]
 
 django_heroku.settings(locals())
 
-if os.getcwd() == '/app':
-    DEBUG = False
-    ALLOWED_HOSTS = ['https://lawedu-ceb9c4653c6b.herokuapp.com/']

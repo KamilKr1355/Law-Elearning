@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path,include
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from django.views.generic import TemplateView
 from drf_yasg import openapi
 from django.conf.urls.static import static
 from django.conf import settings
@@ -34,6 +35,9 @@ schema_view = get_schema_view(
 
 
 urlpatterns = [
+
+    path("",TemplateView.as_view(template_name="index.html")),
+
     path('admin/', admin.site.urls),
 
     path("api/kursy/",include("kursy.api.urls")),
@@ -48,3 +52,16 @@ urlpatterns = [
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+if settings.DEBUG:
+    # Serwowanie standardowych plików statycznych (np. admina)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    
+    # KLUCZOWE: Serwowanie plików JS/CSS Reacta pod ścieżką /assets/
+    # Wykorzystujemy document_root, który jest zdefiniowany w STATICFILES_DIRS,
+    # aby wskazać Django na katalog 'law-elearning/dist'.
+    # Ponieważ lista STATICFILES_DIRS jest już zdefiniowana, 
+    # możemy użyć ustawienia DEBUG_ASSETS_ROOT (ale nie jest ono standardowe). 
+    
+    # Najprostszy sposób to użycie document_root z pierwszego elementu STATICFILES_DIRS:
+    urlpatterns += static('/assets/', document_root=settings.STATICFILES_DIRS[0])
