@@ -164,7 +164,7 @@ DATABASES = {
         'NAME': 'prawo_bd',
         'USER': 'postgres',
         'PASSWORD': 'SJMmwjI*1355',  
-        'HOST': 'db',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
