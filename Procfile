@@ -1,1 +1,1 @@
-web: gunicorn elearning_prawo.wsgi --log-file-
+web: gunicorn elearning_prawo.wsgi --log-file -
