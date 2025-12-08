@@ -164,7 +164,7 @@ DATABASES = {
         'NAME': 'prawo_bd',
         'USER': 'postgres',
         'PASSWORD': 'SJMmwjI*1355',  
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
@@ -210,3 +210,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_root')
+STATIC_URL = '/static/'

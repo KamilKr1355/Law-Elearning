@@ -14,14 +14,14 @@ class Migration(migrations.Migration):
             sql="""
                 CREATE VIEW artykul_kurs_view AS
                 SELECT 
-                    a.id AS artykul_id,
-                    a.tresc,
+                    av.id AS artykul_id,
+                    av.tresc,
                     k.nazwa_kursu,
-                    k.id AS kurs_id  -- Używamy aliasu k.id jako kurs_id
+                    k.id AS kurs_id 
                 FROM 
                     kursy_artykul av
                 JOIN 
-                    kursy_rozdzial k_r ON a.rozdzial_id = k_r.id
+                    kursy_rozdzial k_r ON av.rozdzial_id = k_r.id
                 JOIN 
                     kursy_kurs k ON k.id = k_r.kurs_id;
             """,
