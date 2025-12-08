@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import django_heroku
 from pathlib import Path
 from django.conf import settings
 from dotenv import load_dotenv
@@ -28,11 +29,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-c66prav2wuq*n3)u9!ma(9*0p0%q6&$ax&oloa(mczj%#z@+9o'
+#SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1",'localhost','lawedu-ceb9c4653c6b.herokuapp.com']
 
 
 # Application definition
@@ -107,6 +110,7 @@ SIMPLE_JWT = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -161,10 +165,10 @@ WSGI_APPLICATION = 'elearning_prawo.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'prawo_bd',
-        'USER': 'postgres',
-        'PASSWORD': 'SJMmwjI*1355',  
-        'HOST': 'localhost',
+        'NAME': os.getenv('POSTGRES_DB', 'prawo_bd'),
+        'USER': os.getenv('POSTGRES_USER', 'prawo_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'prawo_password'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
         'PORT': '5432',
     }
 }
@@ -213,3 +217,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_root')
 STATIC_URL = '/static/'
+
+django_heroku.settings(locals())
+
+if os.getcwd() == '/app':
+    DEBUG = False
+    ALLOWED_HOSTS = ['https://lawedu-ceb9c4653c6b.herokuapp.com/']
