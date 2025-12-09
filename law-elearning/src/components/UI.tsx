@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const Button = ({ children, variant = 'primary', className = '', ...props }: any) => {
@@ -39,3 +40,27 @@ export const Spinner = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
   </div>
 );
+
+export const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = "Usuń", isDestructive = true }: any) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-100 animate-fadeIn">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex justify-end space-x-3">
+          <Button variant="secondary" onClick={onClose}>
+            Anuluj
+          </Button>
+          <Button 
+            variant={isDestructive ? 'danger' : 'primary'} 
+            onClick={() => { onConfirm(); onClose(); }}
+          >
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

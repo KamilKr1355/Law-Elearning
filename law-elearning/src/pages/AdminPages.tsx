@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Input, Spinner, Badge } from '../components/UI';
+import { Card, Button, Input, Spinner, Badge, ConfirmationModal } from '../components/UI';
 import { kursService, authService, contentAdminService, wynikiService, raportService } from '../services/api';
 import { Link, useParams } from 'react-router-dom';
 import type { Kurs, Rozdzial, Artykul, Pytanie, Odpowiedz, WynikEgzaminu, StatystykiPytania, KursDni } from '../types';
@@ -21,19 +21,13 @@ const AdminLayout = ({ title, children, actions, backLink }: any) => (
 
 // ------------------- DASHBOARD -------------------
 export const AdminDashboard = () => {
-  // Real stats based on '/statystyki/kursy-dni/'
   const [stats, setStats] = useState<{label: string, value: number}[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Pobieramy gotowe statystyki z nowego endpointu
     wynikiService.getStatsLast7Days().then(data => {
-        // Safe array check
         const rawData = Array.isArray(data) ? data : [];
-        
-        // Mapujemy odpowiedź API (dzien, liczba_kursow) na format wykresu (label, value)
         const chartData = rawData.map((item: any) => {
-            // Zakładam, że data jest w formacie "YYYY-MM-DD"
             const dateObj = new Date(item.dzien);
             const label = `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
             return {
@@ -128,7 +122,6 @@ export const AdminUsers = () => {
   
   useEffect(() => {
     authService.getUsers().then(data => {
-        // Safe check
         setUsers(Array.isArray(data) ? data : []);
     }).catch(err => {
         console.error(err);
@@ -192,6 +185,10 @@ export const AdminKursy = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentKurs, setCurrentKurs] = useState<Partial<Kurs>>({ nazwa_kursu: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [kursToDelete, setKursToDelete] = useState<number | null>(null);
 
   const fetchKursy = () => kursService.getAll().then(data => setKursy(Array.isArray(data) ? data : []));
   
@@ -209,10 +206,16 @@ export const AdminKursy = () => {
     fetchKursy();
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Czy na pewno usunąć ten kurs?')) {
-      await kursService.delete(id);
+  const handleDeleteClick = (id: number) => {
+      setKursToDelete(id);
+      setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (kursToDelete) {
+      await kursService.delete(kursToDelete);
       fetchKursy();
+      setKursToDelete(null);
     }
   };
 
@@ -226,6 +229,14 @@ export const AdminKursy = () => {
       backLink="/admin"
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Kurs</Button>}
     >
+      <ConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Usuwanie Kursu"
+        message="Czy na pewno chcesz usunąć ten kurs? Usunięte zostaną również wszystkie rozdziały i artykuły powiązane z tym kursem."
+      />
+
       {isEditing && (
         <Card className="mb-6 bg-gray-50 border-indigo-200">
           <h3 className="font-bold mb-4">{currentKurs.id ? 'Edytuj Kurs' : 'Nowy Kurs'}</h3>
@@ -266,7 +277,7 @@ export const AdminKursy = () => {
                 <Button variant="secondary" className="text-sm">Artykuły</Button>
               </Link>
               <Button variant="ghost" onClick={() => { setCurrentKurs(k); setIsEditing(true); }}>Edytuj</Button>
-              <Button variant="danger" onClick={() => handleDelete(k.id)}>Usuń</Button>
+              <Button variant="danger" onClick={() => handleDeleteClick(k.id)}>Usuń</Button>
             </div>
           </Card>
         ))}
@@ -282,6 +293,10 @@ export const AdminRozdzialy = () => {
   const [kurs, setKurs] = useState<Kurs | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentRozdzial, setCurrentRozdzial] = useState<Partial<Rozdzial>>({ nazwa_rozdzialu: '' });
+  
+  // Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!kursId) return;
@@ -308,10 +323,16 @@ export const AdminRozdzialy = () => {
     fetchData();
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Usunąć rozdział?')) {
-      await kursService.deleteRozdzial(id);
+  const handleDeleteClick = (id: number) => {
+      setItemToDelete(id);
+      setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      await kursService.deleteRozdzial(itemToDelete);
       fetchData();
+      setItemToDelete(null);
     }
   };
 
@@ -321,6 +342,14 @@ export const AdminRozdzialy = () => {
       backLink="/admin/kursy"
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Rozdział</Button>}
     >
+       <ConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Usuwanie Rozdziału"
+        message="Czy na pewno chcesz usunąć ten rozdział?"
+      />
+
        {isEditing && (
         <Card className="mb-6 bg-gray-50 border-indigo-200">
           <h3 className="font-bold mb-4">{currentRozdzial.id ? 'Edytuj Rozdział' : 'Nowy Rozdział'}</h3>
@@ -348,7 +377,7 @@ export const AdminRozdzialy = () => {
              <span className="font-medium">{r.nazwa_rozdzialu}</span>
              <div className="space-x-2">
                 <Button variant="ghost" onClick={() => { setCurrentRozdzial(r); setIsEditing(true); }}>Edytuj</Button>
-                <Button variant="danger" onClick={() => handleDelete(r.id)}>Usuń</Button>
+                <Button variant="danger" onClick={() => handleDeleteClick(r.id)}>Usuń</Button>
              </div>
            </Card>
         ))}
@@ -364,11 +393,14 @@ export const AdminArtykuly = () => {
   const [rozdzialy, setRozdzialy] = useState<Rozdzial[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentArt, setCurrentArt] = useState<Partial<Artykul>>({ tytul: '', tresc: '', nr_artykulu: '', rozdzial_id: 0 });
+  
+  // Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!kursId) return;
 
-    // Load chapters independently
     try {
         const rozds = await kursService.getRozdzialy(kursId);
         setRozdzialy(Array.isArray(rozds) ? rozds : []);
@@ -376,12 +408,9 @@ export const AdminArtykuly = () => {
         setRozdzialy([]);
     }
 
-    // Load articles and deduplicate based on artykul_id if available
     try {
         const arts = await kursService.getArtykuly(kursId);
         if (Array.isArray(arts)) {
-            // Deduplication logic: use Map with artykul_id (if available) or id as key
-            // This fixes the issue where backend returns identical 'id': 1 for all items
             const uniqueArts = Array.from(new Map(arts.map(item => [item.artykul_id || item.id, item])).values());
             setArtykuly(uniqueArts);
         } else {
@@ -405,7 +434,6 @@ export const AdminArtykuly = () => {
       rozdzial_id: currentArt.rozdzial_id || (rozdzialy.length > 0 ? rozdzialy[0].id : 0)
     };
 
-    // Use proper ID for update (prefer id from edit state)
     if (currentArt.id) {
       await kursService.updateArtykul(currentArt.id, payload);
     } else {
@@ -416,18 +444,21 @@ export const AdminArtykuly = () => {
     fetchData();
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Usunąć artykuł?')) {
-      await kursService.deleteArtykul(id);
+  const handleDeleteClick = (id: number) => {
+      setItemToDelete(id);
+      setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      await kursService.deleteArtykul(itemToDelete);
       fetchData();
+      setItemToDelete(null);
     }
   };
 
   const handleEdit = async (art: any) => {
-    // Determine the ID to use for fetching details and updating
-    // If we have artykul_id, that's likely the real PK
     const realId = art.artykul_id || art.id;
-    
     try {
         const detail = await kursService.getArtykulDetail(realId.toString());
         setCurrentArt({
@@ -441,7 +472,6 @@ export const AdminArtykuly = () => {
         });
         setIsEditing(true);
     } catch (e) {
-        // Fallback if detail fetch fails, use list data
         setCurrentArt({
           id: realId,
           tytul: art.tytul,
@@ -459,6 +489,14 @@ export const AdminArtykuly = () => {
       backLink="/admin/kursy"
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Artykuł</Button>}
     >
+      <ConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Usuwanie Artykułu"
+        message="Czy na pewno chcesz usunąć ten artykuł?"
+      />
+
       {isEditing && (
         <Card className="mb-6 bg-gray-50 border-indigo-200">
            <h3 className="font-bold mb-4">{currentArt.id ? 'Edytuj' : 'Nowy'} Artykuł</h3>
@@ -497,13 +535,11 @@ export const AdminArtykuly = () => {
 
       <div className="space-y-3">
         {artykuly.map(a => {
-            // Determine display ID and key
             const displayId = a.artykul_id || a.id;
             return (
               <Card key={displayId} className="flex justify-between items-center py-3">
                  <div>
                    <span className="text-xs text-gray-500 block">ID: {displayId}</span>
-                   {/* Ensures title is displayed if available */}
                    <span className="font-medium">{a.tytul || `Artykuł ${displayId}`}</span>
                  </div>
                  <div className="space-x-2">
@@ -511,7 +547,7 @@ export const AdminArtykuly = () => {
                       <Button variant="secondary" className="text-xs">Pytania</Button>
                     </Link>
                     <Button variant="ghost" onClick={() => handleEdit(a)}>Edytuj</Button>
-                    <Button variant="danger" onClick={() => handleDelete(displayId)}>Usuń</Button>
+                    <Button variant="danger" onClick={() => handleDeleteClick(displayId)}>Usuń</Button>
                  </div>
               </Card>
             );
@@ -527,6 +563,10 @@ export const AdminPytania = () => {
   const [pytania, setPytania] = useState<Pytanie[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentPytanie, setCurrentPytanie] = useState<Partial<Pytanie>>({ tresc: '' });
+  
+  // Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!artykulId) return;
@@ -556,10 +596,16 @@ export const AdminPytania = () => {
     fetchData();
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Usunąć pytanie?')) {
-      await contentAdminService.deletePytanie(id);
+  const handleDeleteClick = (id: number) => {
+      setItemToDelete(id);
+      setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      await contentAdminService.deletePytanie(itemToDelete);
       fetchData();
+      setItemToDelete(null);
     }
   };
 
@@ -569,6 +615,14 @@ export const AdminPytania = () => {
       backLink="/admin/kursy"
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Pytanie</Button>}
     >
+      <ConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Usuwanie Pytania"
+        message="Czy na pewno chcesz usunąć to pytanie?"
+      />
+
       {isEditing && (
         <Card className="mb-6 bg-gray-50 border-indigo-200">
           <h3 className="font-bold mb-4">{currentPytanie.id ? 'Edytuj' : 'Nowe'} Pytanie</h3>
@@ -599,7 +653,7 @@ export const AdminPytania = () => {
                  <Button variant="secondary" className="text-xs">Odpowiedzi</Button>
                </Link>
                <Button variant="ghost" onClick={() => { setCurrentPytanie(p); setIsEditing(true); }}>Edytuj</Button>
-               <Button variant="danger" onClick={() => handleDelete(p.id)}>Usuń</Button>
+               <Button variant="danger" onClick={() => handleDeleteClick(p.id)}>Usuń</Button>
             </div>
           </Card>
         ))}
@@ -615,15 +669,17 @@ export const AdminOdpowiedzi = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentOdp, setCurrentOdp] = useState<Partial<Odpowiedz>>({ tresc: '', poprawna: false });
   const [parentPytanie, setParentPytanie] = useState<Pytanie | null>(null);
+  
+  // Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!pytanieId) return;
     try {
-      // Fetch answers
       const data = await contentAdminService.getOdpowiedzi(parseInt(pytanieId));
       setOdpowiedzi(Array.isArray(data) ? data : []);
       
-      // Fetch parent question to know where to go back
       const pytData = await contentAdminService.getPytanie(parseInt(pytanieId));
       setParentPytanie(pytData);
     } catch (e) {
@@ -649,10 +705,16 @@ export const AdminOdpowiedzi = () => {
     fetchData();
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Usunąć odpowiedź?')) {
-      await contentAdminService.deleteOdpowiedz(id);
+  const handleDeleteClick = (id: number) => {
+      setItemToDelete(id);
+      setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      await contentAdminService.deleteOdpowiedz(itemToDelete);
       fetchData();
+      setItemToDelete(null);
     }
   };
 
@@ -662,6 +724,14 @@ export const AdminOdpowiedzi = () => {
       backLink={parentPytanie ? `/admin/artykuly/${parentPytanie.artykul_id}/pytania` : '/admin/kursy'}
       actions={<Button onClick={() => setIsEditing(true)}>+ Dodaj Odpowiedź</Button>}
     >
+      <ConfirmationModal 
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Usuwanie Odpowiedzi"
+        message="Czy na pewno chcesz usunąć tę odpowiedź?"
+      />
+
       {isEditing && (
         <Card className="mb-6 bg-gray-50 border-indigo-200">
           <h3 className="font-bold mb-4">{currentOdp.id ? 'Edytuj' : 'Nowa'} Odpowiedź</h3>
@@ -704,7 +774,7 @@ export const AdminOdpowiedzi = () => {
             </div>
             <div className="space-x-2">
                <Button variant="ghost" onClick={() => { setCurrentOdp(o); setIsEditing(true); }}>Edytuj</Button>
-               <Button variant="danger" onClick={() => handleDelete(o.id)}>Usuń</Button>
+               <Button variant="danger" onClick={() => handleDeleteClick(o.id)}>Usuń</Button>
             </div>
           </Card>
         ))}
