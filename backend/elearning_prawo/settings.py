@@ -164,7 +164,8 @@ DATABASES = {
         'NAME': 'prawo_bd',
         'USER': 'postgres',
         'PASSWORD': 'SJMmwjI*1355',  
-        'HOST': 'localhost',
+        'HOST': 'django_app_db',
+        #'HOST': 'localhost',
         'PORT': '5432',
     }
 }

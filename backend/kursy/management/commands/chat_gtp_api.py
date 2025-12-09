@@ -15,14 +15,19 @@ MAX_ARTICLE_TEXT_CHARS = 3000
 def call_openai_for_question(title, content):
     prompt = f"""
 Jesteś asystentem, który na podstawie treści artykułu tworzy jedno wielokrotnego wyboru pytanie (multiple-choice).
-Wejście:
+
+WEJŚCIE:
 Tytuł artykułu: {title}
 Treść artykułu: {content}
 
 WYMAGANIA:
-- wygeneruj dokładnie jedno pytanie,
-- wygeneruj dokładnie 4 odpowiedzi, jedna poprawna,
-- odpowiedzi zwróć w formacie JSON:
+- wygeneruj dokładnie JEDNO pytanie,
+- wygeneruj dokładnie 4 odpowiedzi,
+- DOKŁADNIE JEDNA z odpowiedzi ma mieć "correct": true,
+- trzy pozostałe MUSZĄ mieć "correct": false,
+- odpowiedzi muszą być różne, jednoznaczne,
+- odpowiedzi muszą być sensowne w kontekście artykułu,
+- format odpowiedzi: czysty JSON bez komentarzy:
 {{
   "question": "Pytanie?",
   "options": [
@@ -32,7 +37,10 @@ WYMAGANIA:
     {{"text": "D", "correct": false}}
   ]
 }}
-- Tylko JSON. Pytanie i odpowiedzi po polsku.
+ZASADY:
+- odpowiedzi po polsku,
+- nie dodawaj żadnych wyjaśnień,
+- zwróć TYLKO i WYŁĄCZNIE JSON.
     """
 
     attempt = 0
