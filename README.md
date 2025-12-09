@@ -44,6 +44,7 @@ docker-compose down
 docker-compose exec web python manage.py migrate
 
 #. Tworzenie superusera
+
 docker-compose exec web python manage.py createsuperuser
 
 #. Uruchamianie komend Django (np. scraping)
