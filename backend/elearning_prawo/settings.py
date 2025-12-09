@@ -161,10 +161,10 @@ WSGI_APPLICATION = 'elearning_prawo.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'prawo_bd',
-        'USER': 'postgres',
-        'PASSWORD': 'SJMmwjI*1355',  
-        'HOST': 'django_app_db',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  
+        'HOST': os.getenv('DB_HOST'),
         #'HOST': 'localhost',
         'PORT': '5432',
     }
