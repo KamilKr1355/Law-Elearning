@@ -21,11 +21,17 @@ Git
 Utwórz .env i wklej:
 
 POSTGRES_DB=elearning
+
 POSTGRES_USER=postgres
+
 POSTGRES_PASSWORD=postgres
+
 DB_HOST=db
+
 DB_PORT=5432
-SECRET_KEY=zmien_to_na_swoj
+
+SECRET_KEY=zmien_to_na_swoj - pip install django, python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
 
 OpenAI (jeśli używasz komend scrapingowych)
 OPENAI_API_KEY=sk-xxxxx
