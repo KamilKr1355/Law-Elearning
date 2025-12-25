@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Spinner, Badge, ConfirmationModal } from '../components/UI';
-// Removed non-existent raportService import
 import { kursService, authService, contentAdminService, wynikiService } from '../services/api';
 import { Link, useParams } from 'react-router-dom';
 import type { Kurs, Rozdzial, Artykul, Pytanie, Odpowiedz, WynikEgzaminu, StatystykiPytania, KursDni } from '../types';
@@ -104,11 +103,11 @@ export const AdminDashboard = () => {
                     <span className="text-indigo-600 font-bold">+</span>
                 </Link>
                 <Link to="/admin/users" className="block p-3 bg-gray-50 rounded hover:bg-indigo-50 flex justify-between items-center transition">
-                    <span>Weryfikuj nowych użytkowników</span>
+                    <span>Zarządzaj studentami</span>
                     <span className="text-indigo-600 font-bold">&rarr;</span>
                 </Link>
                 <div className="p-4 bg-yellow-50 rounded text-sm text-yellow-800">
-                    💡 Pamiętaj, aby regularnie sprawdzać komentarze pod artykułami.
+                    💡 Pamiętaj, aby regularnie sprawdzać raporty trudności pytań.
                 </div>
             </div>
         </Card>
@@ -124,6 +123,7 @@ export const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const { user: currentUser } = useAuth();
   
+  // Modal state
   const [modal, setModal] = useState({ open: false, type: '', userId: 0, userName: '' });
 
   const fetchUsers = () => {
@@ -141,18 +141,30 @@ export const AdminUsers = () => {
   }, []);
 
   const handlePromote = async () => {
-    await authService.promoteToAdmin(modal.userId);
-    fetchUsers();
+    try {
+        await authService.promoteToAdmin(modal.userId);
+        fetchUsers();
+    } catch (e) {
+        alert('Błąd podczas awansowania użytkownika.');
+    }
   };
 
   const handleBan = async () => {
-    await authService.toggleUserBan(modal.userId);
-    fetchUsers();
+    try {
+        await authService.toggleUserBan(modal.userId);
+        fetchUsers();
+    } catch (e) {
+        alert('Błąd podczas zmiany statusu blokady.');
+    }
   };
 
   const handleDelete = async () => {
-    await authService.deleteUser(modal.userId);
-    fetchUsers();
+    try {
+        await authService.deleteUser(modal.userId);
+        fetchUsers();
+    } catch (e) {
+        alert('Błąd podczas usuwania użytkownika.');
+    }
   };
 
   const filteredUsers = users.filter(u => 
@@ -173,7 +185,7 @@ export const AdminUsers = () => {
 
       <div className="mb-4 max-w-md">
         <Input 
-          placeholder="Szukaj użytkownika po nazwie lub email..." 
+          placeholder="Szukaj użytkownika..." 
           value={searchTerm}
           onChange={(e: any) => setSearchTerm(e.target.value)}
         />
@@ -186,7 +198,6 @@ export const AdminUsers = () => {
               <tr>
                 <th className="p-4">ID</th>
                 <th className="p-4">Nazwa</th>
-                <th className="p-4">Email</th>
                 <th className="p-4">Rola / Status</th>
                 <th className="p-4 text-right">Akcje</th>
               </tr>
@@ -195,14 +206,16 @@ export const AdminUsers = () => {
               {filteredUsers.map(u => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="p-4">{u.id}</td>
-                  <td className="p-4 font-medium text-gray-900">{u.username}</td>
-                  <td className="p-4">{u.email}</td>
+                  <td className="p-4">
+                      <div className="font-medium text-gray-900">{u.username}</div>
+                      <div className="text-xs text-gray-400">{u.email}</div>
+                  </td>
                   <td className="p-4">
                     <div className="flex flex-col space-y-1">
                       <Badge color={isUserAdmin(u) ? 'red' : 'green'}>
                         {isUserAdmin(u) ? 'Admin' : 'Student'}
                       </Badge>
-                      {u.is_active === false && <Badge color="red">Zbanowany</Badge>}
+                      {u.is_active === false && <Badge color="red">Zablokowany</Badge>}
                     </div>
                   </td>
                   <td className="p-4 text-right space-x-1">
@@ -216,22 +229,20 @@ export const AdminUsers = () => {
                       </button>
                     )}
                     {currentUser?.id !== u.id && (
-                      <button 
-                        onClick={() => setModal({ open: true, type: 'ban', userId: u.id, userName: u.username })}
-                        className={`text-xs px-2 py-1 rounded transition ${u.is_active === false ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
-                        title={u.is_active === false ? 'Odblokuj' : 'Zablokuj'}
-                      >
-                        {u.is_active === false ? 'Odblokuj' : 'Ban'}
-                      </button>
-                    )}
-                    {currentUser?.id !== u.id && (
-                      <button 
-                        onClick={() => setModal({ open: true, type: 'delete', userId: u.id, userName: u.username })}
-                        className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 transition"
-                        title="Usuń"
-                      >
-                        🗑
-                      </button>
+                      <>
+                        <button 
+                          onClick={() => setModal({ open: true, type: 'ban', userId: u.id, userName: u.username })}
+                          className={`text-xs px-2 py-1 rounded transition ${u.is_active === false ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
+                        >
+                          {u.is_active === false ? 'Odblokuj' : 'Ban'}
+                        </button>
+                        <button 
+                          onClick={() => setModal({ open: true, type: 'delete', userId: u.id, userName: u.username })}
+                          className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 transition"
+                        >
+                          🗑
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>
@@ -587,7 +598,7 @@ export const AdminArtykuly = () => {
               </div>
               <div className="flex space-x-2">
                 <Button type="submit">Zapisz</Button>
-                <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>Anuluj</Button>
+                <Button type="button" variant="ghost" onClick={() => { setIsEditing(false); setCurrentArt({tytul: '', tresc: '', nr_artykulu: '', rozdzial_id: 0}); }}>Anuluj</Button>
               </div>
            </form>
         </Card>
@@ -600,7 +611,7 @@ export const AdminArtykuly = () => {
               <Card key={displayId} className="flex justify-between items-center py-3">
                  <div>
                    <span className="text-xs text-gray-500 block">ID: {displayId}</span>
-                   <span className="font-medium">{a.nr_artykulu ? `Art. ${a.nr_artykulu} - ` : ''}{a.tytul || `Artykuł ${displayId}`}</span>
+                   <span className="font-medium">Art. {a.nr_artykulu || '?'} - {a.tytul || `Artykuł ${displayId}`}</span>
                  </div>
                  <div className="space-x-2">
                     <Link to={`/admin/artykuly/${displayId}/pytania`}>
@@ -879,13 +890,13 @@ export const AdminReports = () => {
                 const stats = safeKursy.map(k => {
                     const kWyniki = safeWyniki.filter(w => w.kurs_id === k.id);
                     const avg = kWyniki.length > 0 
-                        ? kWyniki.reduce((acc, curr) => acc + curr.wynik, 0) / kWyniki.length
+                        ? kWyniki.reduce((acc, curr) => acc + Number(curr.wynik || 0), 0) / kWyniki.length
                         : 0;
                     return {
                         id: k.id,
                         name: k.nazwa_kursu,
                         count: kWyniki.length,
-                        avg: avg.toFixed(1)
+                        avg: Number(avg).toFixed(1)
                     };
                 });
                 setCourseStats(stats);
@@ -937,14 +948,16 @@ export const AdminReports = () => {
     }
     setSortConfig({ key, direction });
 
-    setQuestionStats(prev => {
-        const sorted = [...prev].sort((a, b) => {
-            if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-            if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-            return 0;
+    if (activeTab === 'trudnosc') {
+        setQuestionStats(prev => {
+            const sorted = [...prev].sort((a, b) => {
+                if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+                if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            return sorted;
         });
-        return sorted;
-    });
+    }
   };
 
   const renderSortArrow = (key: string) => {
@@ -997,7 +1010,7 @@ export const AdminReports = () => {
                              {userMap[r.uzytkownik_id] || `ID: ${r.uzytkownik_id}`}
                         </td>
                         <td className="p-4">
-                            <Badge color={r.wynik >= 50 ? 'green' : 'red'}>{r.wynik.toFixed(0)}%</Badge>
+                            <Badge color={Number(r.wynik || 0) >= 50 ? 'green' : 'red'}>{Math.round(Number(r.wynik || 0))}%</Badge>
                         </td>
                         </tr>
                     ))}
@@ -1005,7 +1018,62 @@ export const AdminReports = () => {
                 </table>
              </div>
            )}
-           {/* Pozostałe tabele (kursy_stats, trudnosc) analogicznie */}
+
+           {activeTab === 'kursy_stats' && (
+              <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+                        <tr>
+                            <th className="p-4">Nazwa Kursu</th>
+                            <th className="p-4">Rozwiązanych egzaminów</th>
+                            <th className="p-4">Średni wynik</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                        {courseStats.map(s => (
+                            <tr key={s.id} className="hover:bg-gray-50">
+                                <td className="p-4 font-medium">{s.name}</td>
+                                <td className="p-4">{s.count}</td>
+                                <td className="p-4 font-bold text-indigo-600">{s.avg}%</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                  </table>
+              </div>
+           )}
+
+           {activeTab === 'trudnosc' && (
+             <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+                    <tr>
+                        <th className="p-4">Pytanie</th>
+                        <th className="p-4 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('ilosc')}>Próby {renderSortArrow('ilosc')}</th>
+                        <th className="p-4 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('procent')}>Skuteczność {renderSortArrow('procent')}</th>
+                    </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                    {questionStats.map(s => (
+                        <tr key={s.id} className="hover:bg-gray-50">
+                            <td className="p-4 max-w-xs truncate" title={s.tresc}>{s.tresc}</td>
+                            <td className="p-4">{s.ilosc}</td>
+                            <td className="p-4">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-24 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                        <div 
+                                            className={`h-full ${s.procent > 70 ? 'bg-green-500' : s.procent > 40 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                                            style={{ width: `${s.procent}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="font-bold">{s.procent}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+             </div>
+           )}
         </Card>
       )}
     </AdminLayout>
