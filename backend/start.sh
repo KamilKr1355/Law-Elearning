@@ -10,7 +10,7 @@ echo "==> Scrapowanie danych..."
 python manage.py scrapuj_dane
 
 echo "==> Integracja z ChatGPT..."
-python manage.py chat_gpt_api
+python manage.py chat_gtp_api
 
 echo "==> Zbieranie plików statycznych..."
 python manage.py collectstatic --noinput
