@@ -88,6 +88,12 @@ def registerUser(request):
     if serializer.is_valid():
         validated_data = serializer.validated_data 
         
+        if User.objects.filter(username=validated_data['username']).exists():
+            return Response({'error': 'Użytkownik o tej nazwie już istnieje.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(email=validated_data['email']).exists():
+            return Response({'error': 'Ten email jest już zajęty.'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = User.objects.create(
                 username = validated_data['username'],
@@ -100,7 +106,7 @@ def registerUser(request):
             return Response(token_serializer.data, status=status.HTTP_200_OK)
             
         except Exception as e:
-            message = {'error': 'Taka osoba już istnieje.'}
-            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+            print(f"BŁĄD REJESTRACJI: {str(e)}") 
+            return Response({'error': f'Błąd serwera: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
