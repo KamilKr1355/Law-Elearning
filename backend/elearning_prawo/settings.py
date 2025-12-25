@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from django.conf import settings
 from dotenv import load_dotenv
 import dj_database_url
 import os
@@ -35,13 +34,14 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'law-elearning.onrender.com', 
-    'lawedu.onrender.com'
+    'lawedu.onrender.com',
     'localhost', 
     '127.0.0.1'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://law-elearning.onrender.com'
+    'https://law-elearning.onrender.com',
+    'https://lawedu.onrender.com'
 ]
 # Application definition
 
@@ -78,7 +78,7 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": False,
 
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": settings.SECRET_KEY,
+    "SIGNING_KEY": SECRET_KEY,
     "VERIFYING_KEY": "",
     "AUDIENCE": None,
     "ISSUER": None,
@@ -128,6 +128,8 @@ CORS_ALLOWED_ORIGINS = [
     'https://lawedu.onrender.com',
     'https://law-elearning.onrender.com',
     'http://localhost:5173',
+    'http://localhost',
+    'http://localhost:8001',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
 ]
@@ -168,22 +170,27 @@ WSGI_APPLICATION = 'elearning_prawo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+IS_PRODUCTION = os.getenv('RENDER', 'False') == 'True'
 
-DATABASES = {
-  'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600
-    ),
-    'default1': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  
-        'HOST': os.getenv('DB_HOST'),
-        #'HOST': 'localhost',
-        'PORT': '5432',
+if IS_PRODUCTION:
+    DATABASES = {
+    'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  
+            'HOST': os.getenv('DB_HOST'),
+            #'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 
 
 # Password validation

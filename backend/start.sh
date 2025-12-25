@@ -8,6 +8,7 @@ echo "==> Tworzenie superużytkownika..."
 python manage.py createsuperuser --noinput || true
 
 # Uruchamiamy skrypty jeden po drugim, ale całą grupę wysyłamy w tło
+
 run_scripts() {
     echo "==> Start scrapowania..."
     python manage.py scrapuj_dane
@@ -15,7 +16,11 @@ run_scripts() {
     python manage.py chat_gtp_api
 }
 
-run_scripts & # To uruchomi oba skrypty po kolei w tle
+if [ "$SEED_DATA" = "True" ]; then
+  run_scripts & # To uruchomi oba skrypty po kolei w tle
+else
+    echo "==> Pomijam scrapowanie i AI (SEED_DATA != True)."
+fi
 
 echo "==> Uruchamianie serwera Gunicorn..."
 exec gunicorn elearning_prawo.wsgi:application --bind 0.0.0.0:$PORT
