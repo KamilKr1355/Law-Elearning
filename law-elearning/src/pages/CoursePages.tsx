@@ -71,6 +71,7 @@ export const KursDetail = () => {
   const [kurs, setKurs] = useState<Kurs | null>(null);
   const [rozdzialy, setRozdzialy] = useState<Rozdzial[]>([]);
   const [articlesByChapter, setArticlesByChapter] = useState<{ [key: number]: ArtykulView[] }>({});
+  const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
   const [progressData, setProgressData] = useState<KursProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -114,6 +115,13 @@ export const KursDetail = () => {
     }
   }, [id]);
 
+  const toggleChapter = (chapterId: number) => {
+    setExpandedChapters(prev => ({
+      ...prev,
+      [chapterId]: !prev[chapterId]
+    }));
+  };
+
   if (loading) return <Spinner />;
   if (!kurs) return <div className="text-center p-10">Nie znaleziono kursu.</div>;
 
@@ -123,7 +131,7 @@ export const KursDetail = () => {
         <div className="flex justify-between items-end mb-4">
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">{kurs.nazwa_kursu}</h1>
-                <p className="mt-2 text-gray-600">Wybierz rozdział i artykuł, aby rozpocząć naukę.</p>
+                <p className="mt-2 text-gray-600">Rozwiń rozdział, aby zobaczyć listę artykułów.</p>
             </div>
             {progressData && (
                  <div className="text-right">
@@ -132,7 +140,6 @@ export const KursDetail = () => {
             )}
         </div>
         
-        {/* Pasek postępu kursu */}
         {progressData && (
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
                 <div 
@@ -144,28 +151,46 @@ export const KursDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {rozdzialy.length === 0 ? (
             <div className="text-gray-500">Brak rozdziałów w tym kursie.</div>
           ) : (
             rozdzialy.map((rozdzial) => {
+              const isExpanded = !!expandedChapters[rozdzial.id];
               const arts = articlesByChapter[rozdzial.id] || [];
               
               return (
-                <Card key={rozdzial.id} className="border-l-4 border-l-indigo-500">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">{rozdzial.nazwa_rozdzialu}</h3>
-                  <div className="space-y-2">
-                     <div className="grid gap-2">
+                <div key={rozdzial.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <button 
+                    onClick={() => toggleChapter(rozdzial.id)}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none"
+                  >
+                    <h3 className="text-lg font-bold text-gray-800">{rozdzial.nazwa_rozdzialu}</h3>
+                    <div className="flex items-center space-x-3">
+                        <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{arts.length} art.</span>
+                        <span className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+                    </div>
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-2 animate-fadeIn">
                        {arts.length > 0 ? (
                          arts.map((art) => {
                           const realId = art.id || art.artykul_id;
                           return (
                             <Link key={realId} to={`/artykul/${realId}`} className="block">
-                              <div className="p-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 transition flex justify-between items-center group cursor-pointer border border-gray-100">
-                                <span className="font-medium text-sm text-gray-700 group-hover:text-indigo-700">
-                                  {art.tytul || `Artykuł #${realId}`}
-                                </span>
-                                <span className="text-gray-400 group-hover:text-indigo-500">Czytaj &rarr;</span>
+                              <div className="p-3 rounded-lg bg-white hover:bg-indigo-50 hover:text-indigo-700 transition flex justify-between items-center group cursor-pointer border border-gray-200 shadow-sm">
+                                <div className="flex items-center space-x-3">
+                                  {art.nr_artykulu && (
+                                    <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
+                                      Art. {art.nr_artykulu}
+                                    </span>
+                                  )}
+                                  <span className="font-medium text-sm text-gray-700 group-hover:text-indigo-700">
+                                    {art.tytul || `Artykuł #${realId}`}
+                                  </span>
+                                </div>
+                                <span className="text-gray-400 group-hover:text-indigo-500 text-xs">Czytaj &rarr;</span>
                               </div>
                             </Link>
                           );
@@ -173,9 +198,9 @@ export const KursDetail = () => {
                        ) : (
                           <span className="text-sm text-gray-400 italic">Brak artykułów w tym rozdziale.</span>
                        )}
-                     </div>
-                  </div>
-                </Card>
+                    </div>
+                  )}
+                </div>
               );
             })
           )}
@@ -216,32 +241,25 @@ export const ArtykulReader = () => {
   const [artykul, setArtykul] = useState<ArtykulView | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Komentarze
   const [komentarze, setKomentarze] = useState<Komentarz[]>([]);
   const [newComment, setNewComment] = useState('');
   
-  // Modals state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
-  // Edycja komentarza
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   
-  // Zapisany (Bookmark)
   const [isSaved, setIsSaved] = useState(false);
   
-  // Ocena
   const [ratingData, setRatingData] = useState<OcenaArtykuluCombined | null>(null);
   const [userRating, setUserRating] = useState(0);
 
-  // Pytania i Odpowiedzi (Interactive)
   const [questions, setQuestions] = useState<Pytanie[]>([]);
   const [expandedQuestions, setExpandedQuestions] = useState<{ [key: number]: boolean }>({});
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
   const [questionStats, setQuestionStats] = useState<{ [key: number]: StatystykiPytania }>({});
 
-  // Notatki
   const [noteContent, setNoteContent] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMessage, setNoteMessage] = useState('');
@@ -338,10 +356,7 @@ export const ArtykulReader = () => {
       if (commentToDelete === null) return;
       try {
           await aktywnoscService.deleteKomentarz(commentToDelete);
-          
-          // Optimistic update: Remove locally immediately to avoid empty list API errors
           setKomentarze(prev => prev.filter(k => k.id !== commentToDelete));
-          
       } catch (e) {
           console.error("Delete failed", e);
       } finally {
@@ -459,6 +474,9 @@ export const ArtykulReader = () => {
           <Card className="mb-8">
             <div className="flex justify-between items-start mb-4">
                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                      {artykul.nr_artykulu && <Badge color="blue">Art. {artykul.nr_artykulu}</Badge>}
+                  </div>
                   <h1 className="text-2xl font-bold">{artykul.tytul || `Artykuł ${artykul.id}`}</h1>
                   <div className="flex items-center space-x-2 mt-2">
                       <div className="flex text-yellow-400">

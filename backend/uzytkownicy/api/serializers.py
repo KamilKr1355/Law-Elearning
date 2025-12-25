@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     isAdmin = serializers.SerializerMethodField(read_only = True)
     class Meta:
         model = User
-        fields = ['id','username','email','name','isAdmin']
+        fields = ['id','username','email','name','isAdmin','is_active']
 
 
     def get_isAdmin(self,obj):
@@ -26,7 +26,7 @@ class UserSerializerWithToken(UserSerializer):
     token = serializers.SerializerMethodField(read_only = True)
     class Meta:
         model = User
-        fields = ['id','username','email','name','isAdmin','token']
+        fields = ['id','username','email','name','isAdmin','is_active','token']
 
     def get_token(self,obj):
         token = RefreshToken.for_user(obj)
@@ -34,7 +34,7 @@ class UserSerializerWithToken(UserSerializer):
     
 class RegisterUserInputSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    name = serializers.CharField(required=False),
+    name = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
     password = serializers.CharField(
         write_only=True, 

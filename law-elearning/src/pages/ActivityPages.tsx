@@ -1,34 +1,49 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { aktywnoscService } from '../services/api';
-import type { Notatka, ZapisArtykulu } from '../types';
-import { Card, Button, Spinner, ConfirmationModal } from '../components/UI';
+import { aktywnoscService, kursService } from '../services/api';
+import type { Notatka, ZapisArtykulu, ArtykulView } from '../types';
+import { Card, Button, Spinner, ConfirmationModal, Badge } from '../components/UI';
 
 export const MojeNotatki = () => {
   const [notatki, setNotatki] = useState<Notatka[]>([]);
+  const [articlesMap, setArticlesMap] = useState<{[key: number]: {tytul: string, nr: string}}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
 
-  const fetchNotatki = () => {
+  const fetchNotatki = async () => {
     setLoading(true);
-    aktywnoscService.getNotatki()
-      .then((data) => {
-        if (Array.isArray(data)) {
-            setNotatki(data);
-        } else {
-            setNotatki([]);
-        }
-      })
-      .catch((err) => {
+    try {
+        const notesData = await aktywnoscService.getNotatki();
+        const safeNotes = Array.isArray(notesData) ? notesData : [];
+        setNotatki(safeNotes);
+
+        // Map titles and numbers for unique article IDs in notes
+        const uniqueIds = Array.from(new Set(safeNotes.map(n => n.artykul_id)));
+        const map: {[key: number]: {tytul: string, nr: string}} = {};
+        
+        await Promise.all(uniqueIds.map(async (id) => {
+            try {
+                const artDetail = await kursService.getArtykulDetail(id.toString());
+                map[id] = { 
+                    tytul: artDetail.tytul || 'Artykuł bez tytułu',
+                    nr: artDetail.nr_artykulu || ''
+                };
+            } catch (e) {
+                map[id] = { tytul: `Artykuł #${id}`, nr: '' };
+            }
+        }));
+        
+        setArticlesMap(map);
+    } catch (err) {
         console.error(err);
         setError('Nie udało się pobrać notatek.');
-      })
-      .finally(() => setLoading(false));
+    } finally {
+        setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -44,11 +59,9 @@ export const MojeNotatki = () => {
       if (!noteToDelete) return;
       try {
           await aktywnoscService.deleteNotatka(noteToDelete);
-          // Optimistic update
           setNotatki(prev => prev.filter(n => n.id !== noteToDelete));
       } catch (e) {
           console.error(e);
-          // Re-fetch on error to ensure sync
           fetchNotatki();
       } finally {
           setDeleteModalOpen(false);
@@ -87,23 +100,31 @@ export const MojeNotatki = () => {
           </Card>
         ) : (
           <div className="grid gap-6">
-            {notatki.map((note) => (
-              <Card key={note.id} className="relative group">
-                <div className="flex justify-between items-start mb-2">
-                  <Link to={`/artykul/${note.artykul_id}`} className="text-sm font-semibold text-indigo-600 hover:underline">
-                    Do artykułu #{note.artykul_id}
-                  </Link>
-                  <span className="text-xs text-gray-400">
-                      {note.data_zapisu ? new Date(note.data_zapisu).toLocaleDateString() : ''}
-                  </span>
-                </div>
-                <p className="text-gray-800 whitespace-pre-wrap">{note.tresc}</p>
-                
-                <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDeleteClick(note.id)}>Usuń</Button>
-                </div>
-              </Card>
-            ))}
+            {notatki.map((note) => {
+              const artData = articlesMap[note.artykul_id];
+              return (
+                <Card key={note.id} className="relative group border-l-4 border-l-yellow-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex flex-col">
+                        <Link to={`/artykul/${note.artykul_id}`} className="flex items-center space-x-2 group/link">
+                          {artData?.nr && <Badge color="blue">Art. {artData.nr}</Badge>}
+                          <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">
+                            {artData?.tytul || `Ładowanie tytułu...`}
+                          </span>
+                        </Link>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                        {note.data_zapisu ? new Date(note.data_zapisu).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                  <p className="text-gray-800 whitespace-pre-wrap bg-yellow-50/50 p-3 rounded border border-yellow-100 italic">{note.tresc}</p>
+                  
+                  <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDeleteClick(note.id)}>Usuń</Button>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
@@ -115,7 +136,6 @@ export const ZapisaneArtykuly = () => {
   const [zapisane, setZapisane] = useState<ZapisArtykulu[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [bookmarkToDelete, setBookmarkToDelete] = useState<number | null>(null);
 
@@ -139,7 +159,6 @@ export const ZapisaneArtykuly = () => {
       if (!bookmarkToDelete) return;
       try {
           await aktywnoscService.deleteZapis(bookmarkToDelete);
-          // Optimistic
           setZapisane(prev => prev.filter(item => item.artykul_id !== bookmarkToDelete));
       } catch (e) {
           console.error(e);

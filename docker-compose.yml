@@ -18,6 +18,8 @@ services:
       context: ./backend  # WSKAZANIE NA FOLDER BACKEND
       dockerfile: Dockerfile  # Zakładamy, że Dockerfile jest w tym folderze
     container_name: django_backend
+    ports:
+      - "8001:8000"
     command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 elearning_prawo.wsgi:application"
     
     volumes:

@@ -9,7 +9,7 @@ import type {
 
 // Konfiguracja adresu API
 //const API_URL = 'http://127.0.0.1:8000/api';
-const API_URL = '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -71,6 +71,18 @@ export const authService = {
     const response = await api.get('/users/');
     return response.data;
   },
+  promoteToAdmin: async (pk: number | string) => {
+    const response = await api.put(`/users/${pk}/promote/`);
+    return response.data;
+  },
+  toggleUserBan: async (pk: number | string) => {
+    const response = await api.put(`/users/${pk}/ban/`);
+    return response.data;
+  },
+  deleteUser: async (pk: number | string) => {
+    const response = await api.delete(`/users/${pk}/delete/`);
+    return response.data;
+  }
 };
 
 export const kursService = {

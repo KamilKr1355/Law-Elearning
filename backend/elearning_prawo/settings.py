@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from django.conf import settings
 from dotenv import load_dotenv
+import dj_database_url
 import os
 
 load_dotenv()
@@ -27,14 +27,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c66prav2wuq*n3)u9!ma(9*0p0%q6&$ax&oloa(mczj%#z@+9o'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-c66prav2wuq*n3)u9!ma(9*0p0%q6&$ax&oloa(mczj%#z@+9o')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'law-elearning.onrender.com', 
+    'lawedu.onrender.com',
+    'localhost', 
+    '127.0.0.1'
+]
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://law-elearning.onrender.com',
+    'https://lawedu.onrender.com'
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -70,7 +78,7 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": False,
 
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": settings.SECRET_KEY,
+    "SIGNING_KEY": SECRET_KEY,
     "VERIFYING_KEY": "",
     "AUDIENCE": None,
     "ISSUER": None,
@@ -106,6 +114,7 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -116,7 +125,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    'https://lawedu.onrender.com',
+    'https://law-elearning.onrender.com',
     'http://localhost:5173',
+    'http://localhost',
+    'http://localhost:8001',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
 ]
@@ -157,18 +170,27 @@ WSGI_APPLICATION = 'elearning_prawo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+IS_PRODUCTION = os.getenv('RENDER', 'False') == 'true'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  
-        'HOST': os.getenv('DB_HOST'),
-        #'HOST': 'localhost',
-        'PORT': '5432',
+if IS_PRODUCTION:
+    DATABASES = {
+    'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  
+            'HOST': os.getenv('DB_HOST'),
+            #'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 
 
 # Password validation
@@ -211,3 +233,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

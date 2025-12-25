@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -14,7 +15,8 @@ import { ProfilePage } from './pages/ProfilePage';
 import { isUserAdmin } from './utils/auth';
 
 // Protected Route Component
-const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
+// Fix: Changed children to optional to satisfy TS compiler in certain JSX environments
+const ProtectedRoute = ({ children, adminOnly = false }: { children?: React.ReactNode, adminOnly?: boolean }) => {
   const { user, isLoading, logout } = useAuth();
   
   if (isLoading) return <div className="p-10 text-center flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;

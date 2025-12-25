@@ -18,4 +18,4 @@ COPY . /app/
 EXPOSE 8000
 
 # Uruchomienie Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "elearning_prawo.wsgi:application"]
+CMD gunicorn elearning_prawo.wsgi:application --bind 0.0.0.0:$PORT
