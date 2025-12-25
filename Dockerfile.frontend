@@ -16,6 +16,10 @@ RUN npm install
 # Kopiowanie reszty kodu front-endu
 COPY law-elearning/ .
 
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
 # Uruchomienie budowania aplikacji (tworzy folder 'build')
 RUN npm run build
 
