@@ -17,9 +17,9 @@ run_scripts() {
 }
 
 if [ "$SEED_DATA" = "True" ]; then
-  run_scripts & # To uruchomi oba skrypty po kolei w tle
+  echo "==> Pomijam scrapowanie i AI (SEED_DATA != True)."
 else
-    echo "==> Pomijam scrapowanie i AI (SEED_DATA != True)."
+  run_scripts & # To uruchomi oba skrypty po kolei w tle
 fi
 
 echo "==> Uruchamianie serwera Gunicorn..."

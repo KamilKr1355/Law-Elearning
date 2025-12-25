@@ -110,3 +110,69 @@ def registerUser(request):
             return Response({'error': f'Błąd serwera: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(
+    method='put',
+    operation_description="ADMIN: Nadaje uprawnienia administratora (staff) wybranemu użytkownikowi.",
+    responses={
+        status.HTTP_200_OK: "Użytkownik został administratorem.",
+        status.HTTP_404_NOT_FOUND: "Nie znaleziono użytkownika.",
+        status.HTTP_403_FORBIDDEN: "Tylko administrator może wykonać tę akcję."
+    }
+)
+@api_view(['PUT'])
+@permission_classes([IsAdminUser])
+def promoteToAdmin(request, pk):
+    try:
+        user = User.objects.get(id=pk)
+        user.is_staff = True
+        user.save()
+        return Response({'message': f'Użytkownik {user.username} został administratorem.'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'Użytkownik nie istnieje.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@swagger_auto_schema(
+    method='put',
+    operation_description="ADMIN: Banuje użytkownika (ustawia is_active=False) lub go odblokowuje.",
+    responses={
+        status.HTTP_200_OK: "Status użytkownika został zmieniony.",
+        status.HTTP_404_NOT_FOUND: "Nie znaleziono użytkownika."
+    }
+)
+@api_view(['PUT'])
+@permission_classes([IsAdminUser])
+def toggleUserBan(request, pk):
+    try:
+        user = User.objects.get(id=pk)
+        
+        # Zabezpieczenie przed banowaniem samego siebie
+        if user == request.user:
+            return Response({'error': 'Nie możesz zbanować samego siebie.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Przełączamy status is_active
+        user.is_active = not user.is_active
+        user.save()
+        
+        status_msg = "aktywny" if user.is_active else "zbanowany"
+        return Response({'message': f'Użytkownik {user.username} jest teraz {status_msg}.'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'Użytkownik nie istnieje.'}, status=status.HTTP_404_NOT_FOUND)
+
+@swagger_auto_schema(
+    method='delete',
+    operation_description="ADMIN: Całkowite usunięcie użytkownika z bazy danych.",
+    responses={
+        status.HTTP_200_OK: "Użytkownik usunięty.",
+        status.HTTP_404_NOT_FOUND: "Nie znaleziono użytkownika."
+    }
+)
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def deleteUser(request, pk):
+    try:
+        user = User.objects.get(id=pk)
+        user.delete()
+        return Response({'message': 'Użytkownik został usunięty.'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'Użytkownik nie istnieje.'}, status=status.HTTP_404_NOT_FOUND)
