@@ -170,7 +170,7 @@ WSGI_APPLICATION = 'elearning_prawo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-IS_PRODUCTION = os.getenv('RENDER', 'False') == 'True'
+IS_PRODUCTION = os.getenv('RENDER', 'False') == 'true'
 
 if IS_PRODUCTION:
     DATABASES = {
