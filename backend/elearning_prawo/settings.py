@@ -35,6 +35,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'law-elearning.onrender.com', 
+    'lawedu.onrender.com'
     'localhost', 
     '127.0.0.1'
 ]
@@ -124,6 +125,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    'https://lawedu.onrender.com',
     'https://law-elearning.onrender.com',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
