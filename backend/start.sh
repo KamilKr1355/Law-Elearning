@@ -7,11 +7,15 @@ python manage.py migrate --noinput
 echo "==> Tworzenie superużytkownika..."
 python manage.py createsuperuser --noinput || true
 
-# KLUCZOWA ZMIANA: Uruchamiamy ciężkie skrypty w tle za pomocą '&'
-echo "==> Uruchamianie skryptów w tle (aby nie blokować startu)..."
-python manage.py scrapuj_dane &
-python manage.py chat_gtp_api &
+# Uruchamiamy skrypty jeden po drugim, ale całą grupę wysyłamy w tło
+run_scripts() {
+    echo "==> Start scrapowania..."
+    python manage.py scrapuj_dane
+    echo "==> Start AI..."
+    python manage.py chat_gpt_api
+}
+
+run_scripts & # To uruchomi oba skrypty po kolei w tle
 
 echo "==> Uruchamianie serwera Gunicorn..."
-# exec sprawia, że Gunicorn staje się głównym procesem kontenera
 exec gunicorn elearning_prawo.wsgi:application --bind 0.0.0.0:$PORT
