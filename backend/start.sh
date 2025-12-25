@@ -6,6 +6,9 @@ set -e
 echo "==> Uruchamianie migracji..."
 python manage.py migrate --noinput
 
+echo "==> Tworzenie superużytkownika (jeśli nie istnieje)..."
+python manage.py createsuperuser --noinput || true
+
 echo "==> Scrapowanie danych..."
 python manage.py scrapuj_dane
 
