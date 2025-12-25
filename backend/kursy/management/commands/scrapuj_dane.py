@@ -99,6 +99,7 @@ class Command(BaseCommand):
 
     def czysc_tabele(self):
         with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM statystyki_statystykipytania;")
             cursor.execute("DELETE FROM integracja_uzytkownika_progresspytan;")
             cursor.execute("DELETE FROM kursy_odpowiedz;")
             cursor.execute("DELETE FROM kursy_pytanie;")
@@ -113,5 +114,7 @@ class Command(BaseCommand):
             cursor.execute("ALTER SEQUENCE kursy_uzytkownik_kurs_id_seq RESTART WITH 1;")
             cursor.execute("ALTER SEQUENCE kursy_pytanie_id_seq RESTART WITH 1;")
             cursor.execute("ALTER SEQUENCE kursy_odpowiedz_id_seq RESTART WITH 1;")
+            cursor.execute("ALTER SEQUENCE statystyki_statystykipytania_id_seq RESTART WITH 1;")
+            
 
         self.stdout.write(self.style.WARNING("Tabele wyczyszczone i ID zresetowane (SQL)"))
