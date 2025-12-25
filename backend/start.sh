@@ -12,7 +12,7 @@ run_scripts() {
     echo "==> Start scrapowania..."
     python manage.py scrapuj_dane
     echo "==> Start AI..."
-    python manage.py chat_gpt_api
+    python manage.py chat_gtp_api
 }
 
 run_scripts & # To uruchomi oba skrypty po kolei w tle
