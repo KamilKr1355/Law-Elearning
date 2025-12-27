@@ -9,7 +9,8 @@ import type {
 
 // Konfiguracja adresu API
 //const API_URL = 'http://127.0.0.1:8000/api';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+// Fix: Use type casting to any for import.meta to avoid "Property 'env' does not exist on type 'ImportMeta'" error in some TS environments
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8001/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -171,7 +172,7 @@ export const contentAdminService = {
     return response.data;
   },
   updatePytanie: async (id: number, data: any) => {
-    const response = await api.put(`/kursy/pytania/zmien/${id}/`, data);
+    const response = await api.put(`/kursy/pytania/zmien/${id}/`);
     return response.data;
   },
   deletePytanie: async (id: number) => {
@@ -201,6 +202,11 @@ export const aktywnoscService = {
   getNotatki: async (artykulId?: number) => {
     const params = artykulId ? { artykul_id: artykulId } : {};
     const response = await api.get('/aktywnosc/moje-notatki/', { params });
+    return response.data;
+  },
+  // Added getNotatkiKursu to support kurs-specific notes retrieval
+  getNotatkiKursu: async (kursId: string | number) => {
+    const response = await api.get(`/aktywnosc/notatki-kursu/${kursId}/`);
     return response.data;
   },
   addNotatka: async (data: { tresc: string, artykul_id: number }) => {

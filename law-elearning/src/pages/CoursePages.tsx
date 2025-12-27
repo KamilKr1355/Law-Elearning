@@ -208,7 +208,7 @@ export const KursDetail = () => {
         
         <div>
            <Card className="sticky top-24 bg-indigo-50 border-indigo-100 space-y-4">
-              <h3 className="font-bold text-indigo-900">Tryby Nauki</h3>
+              <h3 className="font-bold text-indigo-900 border-b border-indigo-200 pb-2">Tryby Nauki</h3>
               
               <Link to={`/nauka/${id}`} className="block">
                   <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition cursor-pointer border border-indigo-100 flex items-center space-x-3 group">
@@ -229,6 +229,18 @@ export const KursDetail = () => {
                       </div>
                   </div>
               </Link>
+
+              <div className="pt-2">
+                <Link to={`/kursy/${id}/notatki`} className="block">
+                    <div className="bg-amber-50 p-4 rounded-lg shadow-sm hover:shadow-md transition cursor-pointer border border-amber-200 flex items-center space-x-3 group">
+                        <span className="text-2xl group-hover:scale-110 transition">📌</span>
+                        <div>
+                            <h4 className="font-bold text-amber-900">Notatki z Kursu</h4>
+                            <p className="text-xs text-amber-700">Twoje własne notatki</p>
+                        </div>
+                    </div>
+                </Link>
+              </div>
            </Card>
         </div>
       </div>

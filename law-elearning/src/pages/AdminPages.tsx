@@ -1047,6 +1047,7 @@ export const AdminReports = () => {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
                     <tr>
+                        <th className="p-4">ID</th>
                         <th className="p-4">Pytanie</th>
                         <th className="p-4 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('ilosc')}>Próby {renderSortArrow('ilosc')}</th>
                         <th className="p-4 cursor-pointer hover:text-indigo-600" onClick={() => handleSort('procent')}>Skuteczność {renderSortArrow('procent')}</th>
@@ -1055,6 +1056,7 @@ export const AdminReports = () => {
                     <tbody className="divide-y divide-gray-100 text-sm">
                     {questionStats.map(s => (
                         <tr key={s.id} className="hover:bg-gray-50">
+                            <td className="p-4 text-xs text-gray-400 font-mono">#{s.id}</td>
                             <td className="p-4 max-w-xs truncate" title={s.tresc}>{s.tresc}</td>
                             <td className="p-4">{s.ilosc}</td>
                             <td className="p-4">

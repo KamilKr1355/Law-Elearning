@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { aktywnoscService, kursService } from '../services/api';
 import type { Notatka, ZapisArtykulu, ArtykulView } from '../types';
 import { Card, Button, Spinner, ConfirmationModal, Badge } from '../components/UI';
@@ -21,7 +21,6 @@ export const MojeNotatki = () => {
         const safeNotes = Array.isArray(notesData) ? notesData : [];
         setNotatki(safeNotes);
 
-        // Map titles and numbers for unique article IDs in notes
         const uniqueIds = Array.from(new Set(safeNotes.map(n => n.artykul_id)));
         const map: {[key: number]: {tytul: string, nr: string}} = {};
         
@@ -109,7 +108,7 @@ export const MojeNotatki = () => {
                         <Link to={`/artykul/${note.artykul_id}`} className="flex items-center space-x-2 group/link">
                           {artData?.nr && <Badge color="blue">Art. {artData.nr}</Badge>}
                           <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">
-                            {artData?.tytul || `Ładowanie tytułu...`}
+                            {artData?.tytul || `Artykuł #${note.artykul_id}`}
                           </span>
                         </Link>
                     </div>
@@ -130,6 +129,122 @@ export const MojeNotatki = () => {
       </div>
     </>
   );
+};
+
+export const KursNotatki = () => {
+    const { kursId } = useParams<{ kursId: string }>();
+    const [notatki, setNotatki] = useState<any[]>([]);
+    const [articlesMap, setArticlesMap] = useState<{[key: number]: {tytul: string, nr: string}}>({});
+    const [loading, setLoading] = useState(true);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
+
+    const fetchNotatki = async () => {
+        if (!kursId) return;
+        setLoading(true);
+        try {
+            const data = await aktywnoscService.getNotatkiKursu(kursId);
+            const safeNotes = Array.isArray(data) ? data : [];
+            setNotatki(safeNotes);
+
+            const uniqueIds = Array.from(new Set(safeNotes.map(n => n.artykul_id)));
+            const map: {[key: number]: {tytul: string, nr: string}} = {};
+            
+            await Promise.all(uniqueIds.map(async (id) => {
+                try {
+                    const artDetail = await kursService.getArtykulDetail(id.toString());
+                    map[id] = { 
+                        tytul: artDetail.tytul || 'Artykuł bez tytułu',
+                        nr: artDetail.nr_artykulu || ''
+                    };
+                } catch (e) {
+                    map[id] = { tytul: `Artykuł #${id}`, nr: '' };
+                }
+            }));
+            
+            setArticlesMap(map);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchNotatki(); }, [kursId]);
+
+    const handleDeleteClick = (id: number) => {
+        setNoteToDelete(id);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!noteToDelete) return;
+        try {
+            await aktywnoscService.deleteNotatka(noteToDelete);
+            setNotatki(prev => prev.filter(n => n.id !== noteToDelete));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setDeleteModalOpen(false);
+            setNoteToDelete(null);
+        }
+    };
+
+    if (loading) return <Spinner />;
+
+    return (
+        <>
+            <ConfirmationModal 
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Usuwanie notatki"
+                message="Czy na pewno chcesz usunąć tę notatkę?"
+            />
+
+            <div className="max-w-4xl mx-auto">
+                <div className="flex items-center space-x-4 mb-6">
+                    <Link to={kursId ? `/kursy/${kursId}` : "/kursy"} className="text-gray-400 hover:text-gray-600">&larr; Wróć do kursu</Link>
+                    <h1 className="text-3xl font-bold text-gray-900">Notatki z Kursu: {notatki[0]?.nazwa_kursu || 'Twój Kurs'}</h1>
+                </div>
+
+                {notatki.length === 0 ? (
+                    <Card className="text-center py-10">
+                        <p className="text-gray-500">Brak notatek dla tego kursu.</p>
+                    </Card>
+                ) : (
+                    <div className="grid gap-6">
+                        {notatki.map((note) => {
+                            const artData = articlesMap[note.artykul_id];
+                            return (
+                                <Card key={note.id} className="relative group border-l-4 border-l-yellow-400">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Link to={`/artykul/${note.artykul_id}`} className="flex items-center space-x-2 group/link">
+                                            {artData?.nr ? (
+                                                <Badge color="blue">Art. {artData.nr}</Badge>
+                                            ) : (
+                                                <Badge color="blue">Art. {note.nr_artykulu || note.artykul_id}</Badge>
+                                            )}
+                                            <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">
+                                                {artData?.tytul || 'Ładowanie tytułu...'}
+                                            </span>
+                                        </Link>
+                                        <span className="text-xs text-gray-400">
+                                            {note.data_zapisu ? new Date(note.data_zapisu).toLocaleDateString() : ''}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-800 whitespace-pre-wrap bg-yellow-50/50 p-3 rounded border border-yellow-100 italic">{note.tresc}</p>
+                                    <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="danger" className="text-xs py-1 px-3" onClick={() => handleDeleteClick(note.id)}>Usuń</Button>
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </>
+    );
 };
 
 export const ZapisaneArtykuly = () => {
@@ -188,7 +303,7 @@ export const ZapisaneArtykuly = () => {
         {zapisane.length === 0 ? (
           <Card className="text-center py-10">
             <p className="text-gray-500 mb-4">Brak zapisanych artykułów.</p>
-            <Link to="/kursy"><Button>Przeglądaj Kursy</Button></Link>
+            <Link to="/kursy"><Button>Przejdź do nauki</Button></Link>
           </Card>
         ) : (
           <div className="grid gap-4">
