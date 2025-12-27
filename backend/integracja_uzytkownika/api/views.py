@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           ZapisArtykuluSerializer,ZapisArtykuluPostSerializer,
-                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,
+                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,NotatkaSerializer2,
                           KomentarzSerializer,WynikiEgzaminuSerializer,OcenaArtykuluCombinedSerializer
                           ,OcenaArtykuluInputSerializer,OcenaArtykuluSerializer, 
     AverageUzytkownikKursSerializer,
@@ -26,6 +26,7 @@ zapis_schema = openapi.Response("Obiekt Zapisu Artykułu.", ZapisArtykuluSeriali
 zapisy_list_schema = openapi.Response("Lista Zapisanych Artykułów.", ZapisArtykuluSerializer(many=True))
 notatka_schema = openapi.Response("Obiekt Notatki.", NotatkaSerializer)
 notatki_list_schema = openapi.Response("Lista Notatek.", NotatkaSerializer(many=True))
+notatki_list_schema2 = openapi.Response("Lista Notatek.", NotatkaSerializer2(many=True))
 komentarz_schema = openapi.Response("Obiekt Komentarza.", KomentarzSerializer)
 komentarze_list_schema = openapi.Response("Lista Komentarzy.", KomentarzSerializer(many=True))
 wynik_egzaminu_schema = openapi.Response("Obiekt Wyniku Egzaminu.", WynikiEgzaminuSerializer)
@@ -381,6 +382,32 @@ class NotatkaSzczegolyApiView(APIView):
         return Response({"error":"Nie znaleziono notatki lub brak uprawnien"},
                         status=status.HTTP_404_NOT_FOUND)
             
+class NotatkaKursuApiView(APIView):
+    """
+    ZWRACANIE NOTATEK Z KURSU (GET)
+    
+    """
+    permission_classes = [IsAuthenticated]
+    service = NotatkaService()
+    
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca notatki uzytkownika w danym kursie.",
+        responses={
+            status.HTTP_200_OK: notatki_list_schema2,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono notatki.",
+            status.HTTP_403_FORBIDDEN: "Brak uprawnień (nie jesteś właścicielem)."
+        }
+    )
+    def get(self,request,kurs_id):
+        notatka = self.service.get_by_uzytkownik_and_kurs(request.user.id,kurs_id)
+        
+        if not notatka:
+            return Response({"error":"Nie znaleziono notatki"},
+                            status=status.HTTP_404_NOT_FOUND)
+        
+        return Response(NotatkaSerializer2(notatka,many=True).data,
+                        status=status.HTTP_200_OK)
+
 class KomentarzeAPIView(APIView):
     """
     ZARZĄDZANIE KOMENTARZAMI (GET PUBLICZNY, POST ZALOGOWANY)

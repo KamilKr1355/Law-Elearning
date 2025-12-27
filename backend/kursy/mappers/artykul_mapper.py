@@ -3,7 +3,8 @@ def map_artykul_row(row):
         "artykul_id": row[0], 
         "tresc": row[1], 
         "nazwa_kursu": row[2], 
-        "id": row[3]
+        "id": row[3],
+        "nr_artykulu":row[4]
         }
 
 def map_artykul_row2(row):
@@ -13,7 +14,8 @@ def map_artykul_row2(row):
         "tresc": row[2], 
         "nazwa_kursu": row[3], 
         "kurs_id": row[4],
-        "rozdzial_id": row[5]
+        "rozdzial_id": row[5],
+        "nr_artykulu":row[6]
         }
 
 def map_artykul_row3(row):
@@ -23,4 +25,5 @@ def map_artykul_row3(row):
         "tresc": row[2], 
         "nazwa_kursu": row[3], 
         "kurs_id": row[4],
+        "nr_artykulu":row[5]
         }

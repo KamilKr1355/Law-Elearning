@@ -24,6 +24,9 @@ urlpatterns = [
         views.NotatkaSzczegolyApiView.as_view(), 
         name="notatka-szczegoly"),
 
+     path('notatki-kursu/<int:kurs_id>/',
+          views.NotatkaKursuApiView.as_view(),
+          name="notatki-kursu-uzytkownika"),
 
     #Komentarze 
     path('artykuly/<int:artykul_id>/komentarze/', 
