@@ -138,7 +138,6 @@ export const StudyMode = () => {
                 {finalArticleId ? (
                   <Link 
                       to={`/artykul/${finalArticleId}`} 
-                      target="_blank"
                       className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center mt-1 font-bold bg-indigo-50 px-2 py-1 rounded w-fit border border-indigo-100 shadow-sm"
                   >
                       <span className="mr-1">📖</span> Źródło &rarr;

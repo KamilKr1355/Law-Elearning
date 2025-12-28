@@ -7,8 +7,6 @@ import type {
   KursProgress, StatystykiPytania, KursDni, LeaderboardEntry
 } from '../types';
 
-// Konfiguracja adresu API
-//const API_URL = 'http://127.0.0.1:8000/api';
 // Fix: Use type casting to any for import.meta to avoid "Property 'env' does not exist on type 'ImportMeta'" error in some TS environments
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8001/api';
 const api = axios.create({
@@ -18,7 +16,6 @@ const api = axios.create({
   },
 });
 
-// Helper do ręcznego ustawiania tokena (np. przy logowaniu)
 export const setAuthToken = (token: string) => {
     if (token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -27,7 +24,6 @@ export const setAuthToken = (token: string) => {
     }
 };
 
-// Interceptor: Dodawanie tokena JWT z localStorage (dla odświeżenia strony)
 api.interceptors.request.use(
   (config) => {
     const userStr = localStorage.getItem('user');
@@ -37,9 +33,7 @@ api.interceptors.request.use(
         if (user.token) {
           config.headers.Authorization = `Bearer ${user.token}`;
         }
-      } catch (e) {
-         // ignore
-      }
+      } catch (e) {}
     }
     return config;
   },
@@ -64,7 +58,6 @@ export const authService = {
         const response = await api.put('/users/profile/', data);
         return response.data;
     } catch (error: any) {
-        console.warn("Backend prawdopodobnie nie obsługuje edycji profilu (PUT). Symulacja sukcesu.");
         return data;
     }
   },
@@ -95,6 +88,26 @@ export const kursService = {
     const response = await api.get(`/kursy/${id}/`);
     return response.data; 
   },
+  getRozdzialy: async (kursId: string) => {
+    const response = await api.get(`/kursy/${kursId}/rozdzialy/`);
+    return response.data;
+  },
+  getArtykuly: async (kursId: string) => {
+    const response = await api.get(`/kursy/${kursId}/artykuly/`);
+    return response.data;
+  },
+  getArtykulyByRozdzial: async (rozdzialId: number | string) => {
+    const response = await api.get(`/kursy/rozdzial/${rozdzialId}/artykuly/`);
+    return response.data;
+  },
+  getArtykulDetail: async (id: string) => {
+    const response = await api.get(`/kursy/artykuly2/${id}/`);
+    return response.data;
+  },
+  getArtykulDnia: async (kursId: string | number) => {
+    const response = await api.get(`/kursy/artykul-dnia/${kursId}`);
+    return response.data;
+  },
   create: async (data: any) => {
     const response = await api.post('/kursy/', data);
     return response.data;
@@ -105,11 +118,6 @@ export const kursService = {
   },
   delete: async (id: number) => {
     const response = await api.delete(`/kursy/${id}/`);
-    return response.data;
-  },
-  
-  getRozdzialy: async (kursId: string) => {
-    const response = await api.get(`/kursy/${kursId}/rozdzialy/`);
     return response.data;
   },
   createRozdzial: async (kursId: number, data: any) => {
@@ -124,19 +132,6 @@ export const kursService = {
     const response = await api.delete(`/kursy/rozdzialy/${id}/`);
     return response.data;
   },
-
-  getArtykuly: async (kursId: string) => {
-    const response = await api.get(`/kursy/${kursId}/artykuly/`);
-    return response.data;
-  },
-  getArtykulyByRozdzial: async (rozdzialId: number | string) => {
-    const response = await api.get(`/kursy/rozdzial/${rozdzialId}/artykuly/`);
-    return response.data;
-  },
-  getArtykulDetail: async (id: string) => {
-    const response = await api.get(`/kursy/artykuly2/${id}/`);
-    return response.data;
-  },
   createArtykul: async (kursId: number, data: any) => {
     const response = await api.post(`/kursy/${kursId}/artykuly/`, data);
     return response.data;
@@ -149,8 +144,6 @@ export const kursService = {
     const response = await api.delete(`/kursy/artykuly/${id}/`);
     return response.data;
   },
-
-  // Nowa metoda do raportu statystyk pytań
   getAllPytania: async () => {
     const response = await api.get('/kursy/pytania/');
     return response.data;
@@ -162,7 +155,6 @@ export const contentAdminService = {
     const response = await api.get(`/kursy/pytania/artykul/${artykulId}/`);
     return response.data;
   },
-  // NOWE: Pobieranie pojedynczego pytania (do nawigacji wstecz w adminie)
   getPytanie: async (id: number) => {
     const response = await api.get(`/kursy/pytania/zmien/${id}/`);
     return response.data;
@@ -172,14 +164,13 @@ export const contentAdminService = {
     return response.data;
   },
   updatePytanie: async (id: number, data: any) => {
-    const response = await api.put(`/kursy/pytania/zmien/${id}/`);
+    const response = await api.put(`/kursy/pytania/zmien/${id}/`, data);
     return response.data;
   },
   deletePytanie: async (id: number) => {
     const response = await api.delete(`/kursy/pytania/zmien/${id}/`);
     return response.data;
   },
-
   getOdpowiedzi: async (pytanieId: number) => {
     const response = await api.get(`/kursy/odpowiedzi/pytanie/${pytanieId}/`);
     return response.data;
@@ -204,7 +195,6 @@ export const aktywnoscService = {
     const response = await api.get('/aktywnosc/moje-notatki/', { params });
     return response.data;
   },
-  // Added getNotatkiKursu to support kurs-specific notes retrieval
   getNotatkiKursu: async (kursId: string | number) => {
     const response = await api.get(`/aktywnosc/notatki-kursu/${kursId}/`);
     return response.data;
@@ -217,7 +207,6 @@ export const aktywnoscService = {
     const response = await api.delete(`/aktywnosc/moje-notatki/${id}/`);
     return response.data;
   },
-
   getKomentarze: async (artykulId: string) => {
     const response = await api.get(`/aktywnosc/artykuly/${artykulId}/komentarze/`);
     if (Array.isArray(response.data) && response.data.length > 0 && response.data[0] === "message") {
@@ -229,7 +218,6 @@ export const aktywnoscService = {
     const response = await api.post(`/aktywnosc/artykuly/${artykulId}/komentarze/`, { tresc });
     return response.data;
   },
-  // NOWE: Edycja komentarza
   updateKomentarz: async (id: number, tresc: string) => {
     const response = await api.put(`/aktywnosc/komentarze/${id}/`, { tresc });
     return response.data;
@@ -238,7 +226,6 @@ export const aktywnoscService = {
     const response = await api.delete(`/aktywnosc/komentarze/${id}/`);
     return response.data;
   },
-
   getOcena: async (artykulId: string): Promise<OcenaArtykuluCombined> => {
     const response = await api.get(`/aktywnosc/oceny/artykul/${artykulId}/`);
     return response.data;
@@ -247,7 +234,6 @@ export const aktywnoscService = {
     const response = await api.post(`/aktywnosc/oceny/artykul/${artykulId}/`, { ocena });
     return response.data;
   },
-
   getPytaniaNauka: async (kursId: string) => {
     const response = await api.get(`/aktywnosc/nauka/kurs/${kursId}/`);
     return response.data;
@@ -260,18 +246,13 @@ export const aktywnoscService = {
       const response = await api.get(`/aktywnosc/progress/kurs/${kursId}/`);
       return response.data;
   },
-
-  // ZAPISANE (BOOKMARKS)
   getZapisane: async () => {
     const response = await api.get('/aktywnosc/moje-zapisy/');
     return response.data;
   },
-  // Nowa metoda: Sprawdza status konkretnego artykułu
   checkZapis: async (artykulId: number | string) => {
     try {
         const response = await api.get(`/aktywnosc/moje-zapisy/${artykulId}/`);
-        // API zwraca 200 {"istnieje": true} jeśli jest zapisany
-        // API zwraca 204 (No Content) {"istnieje": false} jeśli nie jest zapisany
         if (response.status === 200 && response.data?.istnieje) {
             return true;
         }
@@ -291,10 +272,12 @@ export const aktywnoscService = {
 };
 
 export const quizService = {
-  start: async (kursNazwa: string) => {
-    const response = await api.get('/aktywnosc/quiz/start/', { 
-        params: { kursy: kursNazwa, liczba_pytan: 20 } 
-    });
+  start: async (kursNazwa: string, rozdzialy?: string) => {
+    const params: any = { kursy: kursNazwa, liczba_pytan: 20 };
+    if (rozdzialy) {
+        params.rozdzialy = rozdzialy;
+    }
+    const response = await api.get('/aktywnosc/quiz/start/', { params });
     return response.data;
   },
   check: async (data: { kurs_id: number, odpowiedzi: {pytanie_id: number, wybrana_opcja: number}[] }) => {
@@ -308,27 +291,22 @@ export const wynikiService = {
     const response = await api.get('/aktywnosc/wyniki-egzaminu/');
     return response.data;
   },
-  // NOWY ENDPOINT DLA ADMINA (wszystkie wyniki)
   getAllAdmin: async () => {
     const response = await api.get('/aktywnosc/wyniki-wszystkich-egzaminow/');
     return response.data;
   },
-  // Statystyki dla jednego pytania
   getStats: async (pytanieId: number | string): Promise<StatystykiPytania> => {
      const response = await api.get(`/statystyki/pytanie/${pytanieId}/`);
      return response.data;
   },
-  // Nowy endpoint: Statystyki dla WSZYSTKICH pytań
   getAllStats: async (): Promise<StatystykiPytania[]> => {
     const response = await api.get('/statystyki/pytania/');
     return response.data;
   },
-  // NOWY ENDPOINT: Wykres 7 dni
   getStatsLast7Days: async (): Promise<KursDni[]> => {
     const response = await api.get('/statystyki/kursy-dni/');
     return response.data;
   },
-  // NOWY ENDPOINT: Leaderboard
   getLeaderboard: async (): Promise<LeaderboardEntry[]> => {
     const response = await api.get('/statystyki/leaderboard/');
     return response.data;
@@ -337,15 +315,6 @@ export const wynikiService = {
     const response = await api.get(`/aktywnosc/wyniki-egzaminu/srednia-kursu/${kursId}/`);
     return response.data;
   },
-};
-
-export const raportService = {
-    getPopularArticles: async () => {
-        return []; 
-    },
-    getQuestionStats: async () => {
-        return [];
-    }
 };
 
 export default api;

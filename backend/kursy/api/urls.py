@@ -19,6 +19,7 @@ urlpatterns = [
      path('rozdzial/<int:rozdzial_id>/artykuly/', views.ArtykulyRozdzialAPIView.as_view(), name="artykuly-rozdzialu-lista"),
      path('artykuly/<int:id>/', views.ArtykulySzczegolyAPIView.as_view(), name="artykul-szczegoly"),
      path('artykuly2/<int:id>/', views.ArtykulyGetAPIView.as_view(), name="artykul-szczegoly"),
+     path('artykul-dnia/<int:kurs_id>',views.ArtykulyDniaAPIView.as_view(), name="artykul dnia"),
 
 
      # Pytania

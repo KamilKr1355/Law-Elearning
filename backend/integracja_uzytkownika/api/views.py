@@ -49,6 +49,7 @@ class Start_quiz(APIView):
         manual_parameters=[
             openapi.Parameter('kursy', openapi.IN_QUERY, description="Nazwa kursu, dla którego mają być pytania.", type=openapi.TYPE_STRING, required=True),
             openapi.Parameter('liczba_pytan', openapi.IN_QUERY, description="Maksymalna liczba pytań do pobrania (domyślnie 20).", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('rozdzialy',openapi.IN_QUERY,description="Lista ID rozdziałów, np. 1,2,3",type=openapi.TYPE_INTEGER,required=False)
         ],
         responses={
             status.HTTP_200_OK: quiz_list_schema,
@@ -58,11 +59,16 @@ class Start_quiz(APIView):
     def get(self, request):
         kurs = request.GET.get("kursy")
         count = int(request.GET.get("liczba_pytan", 20))
-
+        rozdzialy_raw = request.GET.get("rozdzialy")
+        if rozdzialy_raw is not None and len(rozdzialy_raw) > 0:
+            rozdzialy = [int(x) for x in rozdzialy_raw.split(",")]
+        else:
+            rozdzialy = None
+    
         if not kurs or count <= 0:
             return Response({"error": "Podaj poprawne dane"}, status=status.HTTP_400_BAD_REQUEST)
 
-        quiz = self.service.start_quiz(kurs, count)
+        quiz = self.service.start_quiz(kurs, count, rozdzialy)
 
         if quiz is None:
             return Response({"error": "Brak pytań"}, status=status.HTTP_404_NOT_FOUND)

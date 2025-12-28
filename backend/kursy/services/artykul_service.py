@@ -12,6 +12,10 @@ class ArtykulService:
     def get_one(self, artykul_id):
         row = ArtykulRepository.get_by_id(artykul_id)
         return map_artykul_row(row) if row else None
+
+    def get_artykul_dnia(self, kurs_id):
+        row = ArtykulRepository.get_artykul_dnia(kurs_id)
+        return map_artykul_row3(row) if row else None
     
     def get_one_with_title(self, artykul_id):
         row = ArtykulRepository.get_by_id2(artykul_id)

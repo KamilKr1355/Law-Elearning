@@ -14,8 +14,17 @@ class ArtykulRepository:
     def get_by_id(artykul_id):
         with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT v.artykul_id,v.tresc,v.nazwa_kursu,id,a.nr_artykulu FROM artykul_kurs_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.artykul_id=%s;",
+                    "SELECT v.artykul_id,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_kurs_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.artykul_id=%s;",
                     [artykul_id]
+                )
+                return cursor.fetchone()
+
+    @staticmethod
+    def get_artykul_dnia(kurs_id):
+        with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.kurs_id = 1 ORDER BY md5(a.id::text || current_date::text) LIMIT 1;",
+                    [kurs_id]
                 )
                 return cursor.fetchone()
 

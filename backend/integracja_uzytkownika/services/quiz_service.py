@@ -4,8 +4,8 @@ from ..mappers.quiz_mapper import map_question_row, map_answer_row
 
 class QuizService:
 
-    def start_quiz(self, kurs_nazwa, count):
-        rows = QuizRepository.get_questions_for_course(kurs_nazwa)
+    def start_quiz(self, kurs_nazwa, count, rozdzialy=None):
+        rows = QuizRepository.get_questions_for_course(kurs_nazwa,rozdzialy)
         if not rows:
             return None
 

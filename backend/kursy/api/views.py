@@ -346,7 +346,38 @@ class ArtykulyGetAPIView(APIView):
 
         return Response(ArtykulRozdzial2Serializer(artykul, many=False).data,status=status.HTTP_200_OK)
     
+class ArtykulyDniaAPIView(APIView):
+    """
+    ZWRACA ARTYKUL DNIA DANEGO KURSU
     
+    Endpointy umożliwiają przeglądanie artykulu dnia (GET), 
+    
+    Publiczne trasy: GET (szczegóły).
+    """
+    service = ArtykulService()
+
+    def get_permissions(self):
+        return [AllowAny()]
+    #permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca artykul dnia po kurs_id",
+        responses={
+            status.HTTP_200_OK: artykulView_schema_response2,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono artykułu"
+        }
+    )
+    def get(self, request, kurs_id):
+        artykul = self.service.get_artykul_dnia(kurs_id)
+        if not artykul:
+            return Response(
+                {"error": "Brak artykułu"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(ArtykulRozdzial2Serializer(artykul, many=False).data,status=status.HTTP_200_OK)
+       
+
 class RozdzialyListaAPIView(APIView):
     """
     ZARZĄDZANIE ROZDZIALAMI (ADMIN / PUBLIC)
