@@ -5,6 +5,11 @@ import { aktywnoscService, kursService } from '../services/api';
 import type { Notatka, ZapisArtykulu, ArtykulView } from '../types';
 import { Card, Button, Spinner, ConfirmationModal, Badge } from '../components/UI';
 
+// Helper do wyciągania ID artykułu niezależnie od formatu API
+const getArticleId = (note: any): number => {
+    return note.artykul_id || (note.artykul && typeof note.artykul === 'object' ? note.artykul.id : note.artykul);
+};
+
 export const MojeNotatki = () => {
   const [notatki, setNotatki] = useState<Notatka[]>([]);
   const [articlesMap, setArticlesMap] = useState<{[key: number]: {tytul: string, nr: string}}>({});
@@ -25,18 +30,19 @@ export const MojeNotatki = () => {
         const safeNotes = Array.isArray(notesData) ? notesData : [];
         setNotatki(safeNotes);
 
-        const uniqueIds = Array.from(new Set(safeNotes.map(n => n.artykul_id)));
+        // Mapowanie tytułów przy użyciu bezpiecznego ID
+        const uniqueIds = Array.from(new Set(safeNotes.map(n => getArticleId(n)).filter(Boolean)));
         const map: {[key: number]: {tytul: string, nr: string}} = {};
         
         await Promise.all(uniqueIds.map(async (id) => {
             try {
                 const artDetail = await kursService.getArtykulDetail(id.toString());
-                map[id] = { 
+                map[id as number] = { 
                     tytul: artDetail.tytul || 'Artykuł bez tytułu',
                     nr: artDetail.nr_artykulu || ''
                 };
             } catch (e) {
-                map[id] = { tytul: `Artykuł #${id}`, nr: '' };
+                map[id as number] = { tytul: `Artykuł #${id}`, nr: '' };
             }
         }));
         
@@ -125,17 +131,18 @@ export const MojeNotatki = () => {
         ) : (
           <div className="grid gap-6">
             {notatki.map((note) => {
-              const artData = articlesMap[note.artykul_id];
+              const finalArtId = getArticleId(note);
+              const artData = articlesMap[finalArtId];
               const isEditing = editingId === note.id;
 
               return (
                 <Card key={note.id} className="relative group border-l-4 border-l-yellow-400">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex flex-col">
-                        <Link to={`/artykul/${note.artykul_id}`} className="flex items-center space-x-2 group/link">
+                        <Link to={`/artykul/${finalArtId}`} className="flex items-center space-x-2 group/link">
                           {artData?.nr && <Badge color="blue">Art. {artData.nr}</Badge>}
                           <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">
-                            {artData?.tytul || `Artykuł #${note.artykul_id}`}
+                            {artData?.tytul || `Artykuł #${finalArtId}`}
                           </span>
                         </Link>
                     </div>
@@ -179,6 +186,7 @@ export const MojeNotatki = () => {
 export const KursNotatki = () => {
     const { kursId } = useParams<{ kursId: string }>();
     const [notatki, setNotatki] = useState<any[]>([]);
+    const [articlesMap, setArticlesMap] = useState<{[key: number]: {tytul: string, nr: string}}>({});
     const [loading, setLoading] = useState(true);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
@@ -191,7 +199,26 @@ export const KursNotatki = () => {
         setLoading(true);
         try {
             const data = await aktywnoscService.getNotatkiKursu(kursId);
-            setNotatki(Array.isArray(data) ? data : []);
+            const safeNotes = Array.isArray(data) ? data : [];
+            setNotatki(safeNotes);
+
+            // Synchronizacja metadanych artykułów (ID i tytuły)
+            const uniqueIds = Array.from(new Set(safeNotes.map(n => getArticleId(n)).filter(Boolean)));
+            const map: {[key: number]: {tytul: string, nr: string}} = {};
+            
+            await Promise.all(uniqueIds.map(async (id) => {
+                try {
+                    const artDetail = await kursService.getArtykulDetail(id.toString());
+                    map[id as number] = { 
+                        tytul: artDetail.tytul || 'Artykuł bez tytułu',
+                        nr: artDetail.nr_artykulu || ''
+                    };
+                } catch (e) {
+                    map[id as number] = { tytul: `Artykuł #${id}`, nr: '' };
+                }
+            }));
+            setArticlesMap(map);
+
         } catch (e) {
             console.error(e);
         } finally {
@@ -266,12 +293,21 @@ export const KursNotatki = () => {
                     <div className="grid gap-6">
                         {notatki.map((note) => {
                             const isEditing = editingId === note.id;
+                            const finalArtId = getArticleId(note);
+                            const artData = articlesMap[finalArtId];
+
                             return (
                                 <Card key={note.id} className="relative group border-l-4 border-l-yellow-400">
                                     <div className="flex justify-between items-start mb-2">
-                                        <Link to={`/artykul/${note.artykul_id}`} className="flex items-center space-x-2 group/link">
-                                            <Badge color="blue">Art. {note.nr_artykulu || note.artykul_id}</Badge>
-                                            <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">Otwórz źródło</span>
+                                        <Link to={`/artykul/${finalArtId}`} className="flex items-center space-x-2 group/link">
+                                            {artData?.nr ? (
+                                                <Badge color="blue">Art. {artData.nr}</Badge>
+                                            ) : (
+                                                <Badge color="gray">ID: {finalArtId}</Badge>
+                                            )}
+                                            <span className="text-sm font-bold text-indigo-600 group-hover/link:underline">
+                                                {artData?.tytul || 'Otwórz źródło'}
+                                            </span>
                                         </Link>
                                         <span className="text-xs text-gray-400">
                                             {note.data_zapisu ? new Date(note.data_zapisu).toLocaleDateString() : ''}
