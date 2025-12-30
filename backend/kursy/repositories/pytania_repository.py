@@ -62,6 +62,7 @@ class PytaniaRepository:
             cursor.execute("""
                 SELECT
                     p.id AS pytanie_id,
+                    p.artykul_id,
                     p.tresc AS tresc_pytania,
                     COALESCE(pp.status, 'NW') AS status_uzytkownika 
                 FROM 

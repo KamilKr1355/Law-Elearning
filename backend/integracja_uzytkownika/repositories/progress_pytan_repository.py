@@ -83,6 +83,6 @@ class ProgressPytanRepository:
                      JOIN kursy_rozdzial r ON a.rozdzial_id = r.id
                      WHERE pp.uzytkownik_id = %s
                      AND r.kurs_id = %s
-                     AND pp.status IN ('OP', 'OZ')) AS completed_count;
+                     AND pp.status IN ('OP', 'OZ', 'W')) AS completed_count;
             """, [kurs_id, uzytkownik_id, kurs_id])
             return cursor.fetchone()

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import (QuizSerializer, SprawdzOdpowiedzSerializer,
                           ZapisArtykuluSerializer,ZapisArtykuluPostSerializer,
-                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,
+                          NotatkaSerializer,NotatkaPostSerializer,NotatkaPutSerializer,NotatkaSerializer2,
                           KomentarzSerializer,WynikiEgzaminuSerializer,OcenaArtykuluCombinedSerializer
                           ,OcenaArtykuluInputSerializer,OcenaArtykuluSerializer, 
     AverageUzytkownikKursSerializer,
@@ -16,6 +16,7 @@ from integracja_uzytkownika.services.notatka_service import NotatkaService
 from integracja_uzytkownika.services.komentarz_service import KomentarzService
 from integracja_uzytkownika.services.wyniki_egzaminu_service import WynikEgzaminuService
 from integracja_uzytkownika.services.ocena_artykulu_service import OcenaArtykuluService
+from kursy.api.serializers import OdpowiedziSerializer
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from drf_yasg.utils import swagger_auto_schema
 from integracja_uzytkownika.services.tryb_nauki_services import TrybNaukiService
@@ -26,6 +27,7 @@ zapis_schema = openapi.Response("Obiekt Zapisu Artykułu.", ZapisArtykuluSeriali
 zapisy_list_schema = openapi.Response("Lista Zapisanych Artykułów.", ZapisArtykuluSerializer(many=True))
 notatka_schema = openapi.Response("Obiekt Notatki.", NotatkaSerializer)
 notatki_list_schema = openapi.Response("Lista Notatek.", NotatkaSerializer(many=True))
+notatki_list_schema2 = openapi.Response("Lista Notatek.", NotatkaSerializer2(many=True))
 komentarz_schema = openapi.Response("Obiekt Komentarza.", KomentarzSerializer)
 komentarze_list_schema = openapi.Response("Lista Komentarzy.", KomentarzSerializer(many=True))
 wynik_egzaminu_schema = openapi.Response("Obiekt Wyniku Egzaminu.", WynikiEgzaminuSerializer)
@@ -48,6 +50,7 @@ class Start_quiz(APIView):
         manual_parameters=[
             openapi.Parameter('kursy', openapi.IN_QUERY, description="Nazwa kursu, dla którego mają być pytania.", type=openapi.TYPE_STRING, required=True),
             openapi.Parameter('liczba_pytan', openapi.IN_QUERY, description="Maksymalna liczba pytań do pobrania (domyślnie 20).", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('rozdzialy',openapi.IN_QUERY,description="Lista ID rozdziałów, np. 1,2,3",type=openapi.TYPE_INTEGER,required=False)
         ],
         responses={
             status.HTTP_200_OK: quiz_list_schema,
@@ -57,11 +60,16 @@ class Start_quiz(APIView):
     def get(self, request):
         kurs = request.GET.get("kursy")
         count = int(request.GET.get("liczba_pytan", 20))
-
+        rozdzialy_raw = request.GET.get("rozdzialy")
+        if rozdzialy_raw is not None and len(rozdzialy_raw) > 0:
+            rozdzialy = [int(x) for x in rozdzialy_raw.split(",")]
+        else:
+            rozdzialy = None
+    
         if not kurs or count <= 0:
             return Response({"error": "Podaj poprawne dane"}, status=status.HTTP_400_BAD_REQUEST)
 
-        quiz = self.service.start_quiz(kurs, count)
+        quiz = self.service.start_quiz(kurs, count, rozdzialy)
 
         if quiz is None:
             return Response({"error": "Brak pytań"}, status=status.HTTP_404_NOT_FOUND)
@@ -110,7 +118,32 @@ class Sprawdz_quiz(APIView):
                 properties={
                     "punkty": openapi.Schema(type=openapi.TYPE_INTEGER),
                     "poprawne": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='Lista ID pytań, na które odpowiedziano poprawnie.'),
-                    "wynik": openapi.Schema(type=openapi.TYPE_NUMBER, description='Wynik procentowy egzaminu.')
+                    "wynik": openapi.Schema(type=openapi.TYPE_NUMBER, description='Wynik procentowy egzaminu.'),
+                    "wybrane": openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        description='Opcje odpowiedzi dla każdego pytania + wybór użytkownika',
+                        items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "opcje_pytania": openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "id": openapi.Schema(type=openapi.TYPE_INTEGER),
+                                            "tresc": openapi.Schema(type=openapi.TYPE_STRING),
+                                            "poprawna": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                            "pytanie_id": openapi.Schema(type=openapi.TYPE_INTEGER),
+                                        }
+                                    )
+                                ),
+                                "wybrana_opcja": openapi.Schema(
+                                    type=openapi.TYPE_INTEGER,
+                                    description='ID odpowiedzi wybranej przez użytkownika'
+                                )
+                            }
+                        )
+                    ),
                 }
             )),
             status.HTTP_400_BAD_REQUEST: "Błąd walidacji lub brak pola 'kurs_id'."
@@ -130,13 +163,14 @@ class Sprawdz_quiz(APIView):
         if not kurs_id:
             return Response({"error": "Brak wymaganego pola kurs_id w ciele żądania"}, status=status.HTTP_400_BAD_REQUEST)
 
-        wynik, poprawne_ids = self.service.check_quiz(serializer.validated_data)
+        wynik, poprawne_ids, wybrane = self.service.check_quiz(serializer.validated_data)
         procent = round(float(100*wynik/len(request.data["odpowiedzi"])),2)
         self.wyniki_service.insert_wynik(procent,kurs_id,request.user.id)
 
         return Response({
             "punkty": wynik,
             "poprawne": poprawne_ids,
+            "wybrane" : wybrane,
             "wynik": procent
         }, status=status.HTTP_200_OK)
 
@@ -381,6 +415,32 @@ class NotatkaSzczegolyApiView(APIView):
         return Response({"error":"Nie znaleziono notatki lub brak uprawnien"},
                         status=status.HTTP_404_NOT_FOUND)
             
+class NotatkaKursuApiView(APIView):
+    """
+    ZWRACANIE NOTATEK Z KURSU (GET)
+    
+    """
+    permission_classes = [IsAuthenticated]
+    service = NotatkaService()
+    
+    @swagger_auto_schema(
+        operation_description="POBIERANIE: Zwraca notatki uzytkownika w danym kursie.",
+        responses={
+            status.HTTP_200_OK: notatki_list_schema2,
+            status.HTTP_404_NOT_FOUND: "Nie znaleziono notatki.",
+            status.HTTP_403_FORBIDDEN: "Brak uprawnień (nie jesteś właścicielem)."
+        }
+    )
+    def get(self,request,kurs_id):
+        notatka = self.service.get_by_uzytkownik_and_kurs(request.user.id,kurs_id)
+        
+        if not notatka:
+            return Response({"error":"Nie znaleziono notatki"},
+                            status=status.HTTP_404_NOT_FOUND)
+        
+        return Response(NotatkaSerializer2(notatka,many=True).data,
+                        status=status.HTTP_200_OK)
+
 class KomentarzeAPIView(APIView):
     """
     ZARZĄDZANIE KOMENTARZAMI (GET PUBLICZNY, POST ZALOGOWANY)
@@ -854,6 +914,57 @@ class ProgressPytanAPIView(APIView):
             "podsumowanie": ProgressKursSummarySerializer(summary).data
         }, status=status.HTTP_200_OK)
     
+class AktualizujStatusPytaniaAPIView(APIView):
+    """
+    AKTUALIZACJA STATUSU PYTANIA DLA UŻYTKOWNIKA
+
+    Pozwala zaktualizować status konkretnego pytania w kursie dla zalogowanego użytkownika.
+    """
+
+    permission_classes = [IsAuthenticated]
+    service = ProgressPytanService()
+
+    @swagger_auto_schema(
+        operation_description="POST: Aktualizuje status pytania dla użytkownika.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['pytanie_id', 'status'],
+            properties={
+                'pytanie_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID pytania do aktualizacji'),
+                'status': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Nowy status pytania: OP=poprawne, OZ=niepoprawne, W=wyświetlone, NW=nie wyświetlone'
+                )
+            }
+        ),
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Zaktualizowany status pytania",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "pytanie_id": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "status": openapi.Schema(type=openapi.TYPE_STRING, description="Nowy status pytania")
+                    }
+                )
+            ),
+            status.HTTP_400_BAD_REQUEST: "Nieprawidłowe dane"
+        }
+    )
+    def post(self, request):
+        pytanie_id = request.data.get('pytanie_id')
+        state = request.data.get('status')
+
+        if not pytanie_id or not state:
+            return Response({"detail": "Brak pytanie_id lub status"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            updated = self.service.aktualizuj_postep(request.user.id, pytanie_id, state)
+            return Response(updated, status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
 
 class TrybNaukiAPIView(APIView):
     """
@@ -878,10 +989,6 @@ class TrybNaukiAPIView(APIView):
         
         if not pytania:
             return Response({"message": "Brak pytań do nauki w tym kursie."}, status=status.HTTP_200_OK)
-
-        for p in pytania:
-             self.service.oznacz_jako_wyswietlone(p['pytanie_id'], request.user.id)
-             p['status_uzytkownika'] = 'W' 
 
         return Response(PytanieTrybNaukiSerializer(pytania, many=True).data, status=status.HTTP_200_OK)
 """

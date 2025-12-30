@@ -25,6 +25,7 @@ def map_postep_pytania_tryb_nauki_row(wiersz):
         
     return {
         "pytanie_id": wiersz[0],
-        "tresc": wiersz[1],
-        "status_uzytkownika": wiersz[2] 
+        "artykul_id": wiersz[1],
+        "tresc": wiersz[2],
+        "status_uzytkownika": wiersz[3] 
     }

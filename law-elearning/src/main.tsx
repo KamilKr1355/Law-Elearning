@@ -8,22 +8,18 @@ import { Login, Register } from './pages/AuthPages';
 import { KursyList, KursDetail, ArtykulReader } from './pages/CoursePages';
 import { AdminDashboard, AdminUsers, AdminKursy, AdminReports, AdminRozdzialy, AdminArtykuly, AdminPytania, AdminOdpowiedzi } from './pages/AdminPages';
 import { QuizStart, QuizActive, QuizSummary } from './pages/QuizPages';
-import { MojeNotatki, ZapisaneArtykuly } from './pages/ActivityPages';
+import { MojeNotatki, ZapisaneArtykuly, KursNotatki } from './pages/ActivityPages';
 import { StudyMode } from './pages/StudyPages';
 import { ResultsHistory } from './pages/ResultsPages';
 import { ProfilePage } from './pages/ProfilePage';
 import { isUserAdmin } from './utils/auth';
 
-// Protected Route Component
-// Fix: Changed children to optional to satisfy TS compiler in certain JSX environments
 const ProtectedRoute = ({ children, adminOnly = false }: { children?: React.ReactNode, adminOnly?: boolean }) => {
   const { user, isLoading, logout } = useAuth();
   
   if (isLoading) return <div className="p-10 text-center flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
   if (!user) return <Navigate to="/login" replace />;
   
-  // ZMIANA TUTAJ: Zamiast przekierowywać (Navigate), pokazujemy ekran błędu
-  // Używamy też nowej funkcji isUserAdmin, która ma 'backdoor'
   if (adminOnly && !isUserAdmin(user)) {
       console.warn("Access Denied: User is not recognized as Admin", user);
       
@@ -69,43 +65,34 @@ const App = () => {
       <AuthProvider>
         <Layout>
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Navigate to="/kursy" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
-            {/* Student Routes */}
             <Route path="/kursy" element={<ProtectedRoute><KursyList /></ProtectedRoute>} />
             <Route path="/kursy/:id" element={<ProtectedRoute><KursDetail /></ProtectedRoute>} />
             <Route path="/artykul/:id" element={<ProtectedRoute><ArtykulReader /></ProtectedRoute>} />
             <Route path="/nauka/:kursId" element={<ProtectedRoute><StudyMode /></ProtectedRoute>} />
             <Route path="/wyniki" element={<ProtectedRoute><ResultsHistory /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/kursy/:kursId/notatki" element={<ProtectedRoute><KursNotatki /></ProtectedRoute>} />
             
-            {/* Quiz Routes */}
             <Route path="/quiz" element={<ProtectedRoute><QuizStart /></ProtectedRoute>} />
             <Route path="/quiz/play" element={<ProtectedRoute><QuizActive /></ProtectedRoute>} />
             <Route path="/quiz/wynik" element={<ProtectedRoute><QuizSummary /></ProtectedRoute>} />
 
-            {/* Activity Routes */}
             <Route path="/moje-notatki" element={<ProtectedRoute><MojeNotatki /></ProtectedRoute>} />
             <Route path="/zapisane" element={<ProtectedRoute><ZapisaneArtykuly /></ProtectedRoute>} />
             
-            {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/raporty" element={<ProtectedRoute adminOnly><AdminReports /></ProtectedRoute>} />
-            
-            {/* Admin Content Management */}
             <Route path="/admin/kursy" element={<ProtectedRoute adminOnly><AdminKursy /></ProtectedRoute>} />
             <Route path="/admin/kursy/:kursId/rozdzialy" element={<ProtectedRoute adminOnly><AdminRozdzialy /></ProtectedRoute>} />
             <Route path="/admin/kursy/:kursId/artykuly" element={<ProtectedRoute adminOnly><AdminArtykuly /></ProtectedRoute>} />
-            
-            {/* Admin Deep Content Management */}
             <Route path="/admin/artykuly/:artykulId/pytania" element={<ProtectedRoute adminOnly><AdminPytania /></ProtectedRoute>} />
             <Route path="/admin/pytania/:pytanieId/odpowiedzi" element={<ProtectedRoute adminOnly><AdminOdpowiedzi /></ProtectedRoute>} />
             
-            {/* Fallback */}
             <Route path="*" element={<div className="text-center mt-20 text-xl text-gray-400">404 - Strona nie istnieje</div>} />
           </Routes>
         </Layout>

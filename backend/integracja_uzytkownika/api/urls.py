@@ -24,6 +24,9 @@ urlpatterns = [
         views.NotatkaSzczegolyApiView.as_view(), 
         name="notatka-szczegoly"),
 
+     path('notatki-kursu/<int:kurs_id>/',
+          views.NotatkaKursuApiView.as_view(),
+          name="notatki-kursu-uzytkownika"),
 
     #Komentarze 
     path('artykuly/<int:artykul_id>/komentarze/', 
@@ -65,6 +68,10 @@ urlpatterns = [
     path('progress/kurs/<int:kurs_id>/', 
          views.ProgressPytanAPIView.as_view(), 
          name="progress-pytan-kurs"),
+
+     path('progress/pytanie/aktualizuj/', 
+     views.AktualizujStatusPytaniaAPIView.as_view(), 
+     name="aktualizuj-status-pytania"),
 
     #Tryb Nauki
      path('nauka/kurs/<int:kurs_id>/',

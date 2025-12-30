@@ -1,11 +1,15 @@
 from ..repositories.notatka_repository import NotatkaRepository
-from ..mappers.notatka_mapper import map_notatka_row
+from ..mappers.notatka_mapper import map_notatka_row,map_notatka_row2
 
 class NotatkaService:
 
     def get_by_uzytkownik_and_artykul(self,uzytkownik_id,artykul_id):
         row = NotatkaRepository.get_by_uzytkownik_and_artykul(uzytkownik_id,artykul_id)
         return [map_notatka_row(r) for r in row]
+    
+    def get_by_uzytkownik_and_kurs(self,uzytkownik_id,kurs_id):
+        row = NotatkaRepository.get_by_uzytkownik_and_kurs(uzytkownik_id,kurs_id)
+        return [map_notatka_row2(r) for r in row]
     
     def get_by_uzytkownik(self,uzytkownik_id):
         row = NotatkaRepository.get_by_uzytkownik(uzytkownik_id)

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { aktywnoscService, contentAdminService } from '../services/api';
 import type { QuizQuestion, Odpowiedz } from '../types';
 import { Card, Button, Spinner, Badge } from '../components/UI';
@@ -9,7 +9,7 @@ export const StudyMode = () => {
   const { kursId } = useParams<{ kursId: string }>();
   const navigate = useNavigate();
   
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,17 @@ export const StudyMode = () => {
       aktywnoscService.getPytaniaNauka(kursId)
         .then(data => {
             if (Array.isArray(data)) {
-                setQuestions(data);
+                const normalized = data.map((item: any) => {
+                    if (Array.isArray(item)) {
+                        return {
+                            ...item[0],
+                            artykul_id: item[1],
+                            nr_artykulu: item[2]
+                        };
+                    }
+                    return item;
+                });
+                setQuestions(normalized);
             } else {
                 setQuestions([]);
             }
@@ -42,6 +52,21 @@ export const StudyMode = () => {
             setCorrectAnswer("Błąd danych (brak ID pytania)");
             return;
         }
+
+        // Automatyczna zmiana statusu NW -> W przy samym wyświetleniu karty (opcjonalnie)
+        // Jeśli użytkownik chce, aby status zmieniały TYLKO przyciski, można to usunąć.
+        if (q.status === 'NW') {
+            try {
+                await aktywnoscService.updateStatusPytania(questionId, 'W');
+                setQuestions(prev => {
+                    const copy = [...prev];
+                    copy[currentIndex] = { ...copy[currentIndex], status: 'W' };
+                    return copy;
+                });
+            } catch (e) {
+                console.warn("Status update failed", e);
+            }
+        }
         
         try {
             const answers: Odpowiedz[] = await contentAdminService.getOdpowiedzi(questionId);
@@ -56,7 +81,7 @@ export const StudyMode = () => {
     if (questions.length > 0 && !finished) {
         fetchAnswer();
     }
-  }, [currentIndex, questions, finished]);
+  }, [currentIndex, questions.length, finished]);
 
   const handleResponse = async (known: boolean) => {
     const currentQ = questions[currentIndex];
@@ -64,12 +89,14 @@ export const StudyMode = () => {
     
     if (questionId) {
         try {
-            await aktywnoscService.updatePostepNauki({
-                pytanie_id: questionId,
-                is_correct: known
-            });
+            await aktywnoscService.updateStatusPytania(questionId, known ? 'W' : 'NW');
+
+//            await aktywnoscService.updatePostepNauki({
+  //              pytanie_id: questionId,
+    //            is_correct: known
+      //      });
         } catch (e) {
-            console.error("Failed to update stats", e);
+            console.error("Failed to update status/stats", e);
         }
     }
 
@@ -113,45 +140,54 @@ export const StudyMode = () => {
 
   const currentQ = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;
+  
+  const finalArticleId = currentQ.artykul_id;
 
   return (
     <div className="max-w-2xl mx-auto py-6 perspective-1000">
-        {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
             <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
         </div>
 
         <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Tryb Nauki</h1>
+            <div className="flex flex-col">
+                <h1 className="text-2xl font-bold text-gray-800">Tryb Nauki</h1>
+                {finalArticleId ? (
+                  <Link 
+                      to={`/artykul/${finalArticleId}`} 
+                      className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center mt-1 font-bold bg-indigo-50 px-2 py-1 rounded w-fit border border-indigo-100 shadow-sm"
+                  >
+                      <span className="mr-1">📖</span> Źródło &rarr;
+                  </Link>
+                ) : (
+                  <span className="text-xs text-gray-400 italic mt-1">Źródło niedostępne</span>
+                )}
+            </div>
             <Badge color="blue">{currentIndex + 1} / {questions.length}</Badge>
         </div>
 
-        {/* Card Container */}
         <div className="relative h-80 w-full cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
             <div className={`relative w-full h-full text-center transition-transform duration-700 transform style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
                 
-                {/* Front */}
                 <div className="absolute w-full h-full backface-hidden bg-white border-2 border-indigo-100 rounded-2xl shadow-lg flex flex-col items-center justify-center p-8" style={{ backfaceVisibility: 'hidden' }}>
                     <span className="text-xs uppercase text-indigo-500 font-bold mb-4 tracking-wider">Pytanie</span>
-                    <h3 className="text-2xl font-medium text-gray-800">{currentQ.tresc}</h3>
-                    <p className="text-xs text-gray-400 absolute bottom-4">Kliknij, aby zobaczyć odpowiedź</p>
+                    <h3 className="text-2xl font-medium text-gray-800 leading-snug">{currentQ.tresc}</h3>
+                    <p className="text-xs text-gray-400 absolute bottom-4">Kliknij kartę, aby zobaczyć odpowiedź</p>
                 </div>
 
-                {/* Back */}
                 <div className="absolute w-full h-full backface-hidden bg-indigo-600 rounded-2xl shadow-xl flex flex-col items-center justify-center p-8 text-white" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                     <span className="text-xs uppercase text-indigo-200 font-bold mb-4 tracking-wider">Poprawna odpowiedź</span>
-                    <h3 className="text-2xl font-medium">{correctAnswer || 'Ładowanie odpowiedzi...'}</h3>
+                    <h3 className="text-2xl font-medium leading-snug">{correctAnswer || 'Ładowanie odpowiedzi...'}</h3>
                 </div>
             </div>
         </div>
 
-        {/* Controls */}
         <div className={`mt-10 flex justify-center space-x-6 transition-opacity duration-300 ${isFlipped ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
             <button 
                 onClick={(e) => { e.stopPropagation(); handleResponse(false); }}
                 className="flex flex-col items-center group"
             >
-                <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl mb-2 group-hover:bg-red-200 group-hover:scale-110 transition-all">✕</div>
+                <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl mb-2 group-hover:bg-red-200 group-hover:scale-110 transition-all border-2 border-transparent hover:border-red-300 shadow-sm">✕</div>
                 <span className="text-xs font-bold text-gray-500">Jeszcze nie umiem</span>
             </button>
 
@@ -159,7 +195,7 @@ export const StudyMode = () => {
                 onClick={(e) => { e.stopPropagation(); handleResponse(true); }}
                 className="flex flex-col items-center group"
             >
-                <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xl mb-2 group-hover:bg-green-200 group-hover:scale-110 transition-all">✓</div>
+                <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xl mb-2 group-hover:bg-green-200 group-hover:scale-110 transition-all border-2 border-transparent hover:border-green-300 shadow-sm">✓</div>
                 <span className="text-xs font-bold text-gray-500">Umiem to!</span>
             </button>
         </div>

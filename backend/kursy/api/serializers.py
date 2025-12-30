@@ -28,6 +28,7 @@ class ArtykulRozdzialSerializer(serializers.Serializer):
     nazwa_kursu = serializers.CharField(max_length=50,required=True)
     kurs_id = serializers.IntegerField(read_only=True)
     rozdzial_id = serializers.IntegerField(required=False)
+    nr_artykulu = serializers.CharField(max_length=10,read_only=True,allow_blank=True)
 
 class ArtykulRozdzial2Serializer(serializers.Serializer):
     artykul_id = serializers.IntegerField(read_only=True)
@@ -35,12 +36,14 @@ class ArtykulRozdzial2Serializer(serializers.Serializer):
     tresc = serializers.CharField(required=True,allow_blank=False)
     nazwa_kursu = serializers.CharField(max_length=50,required=True)
     kurs_id = serializers.IntegerField(read_only=True)
+    nr_artykulu = serializers.CharField(max_length=10,read_only=True,allow_blank=True)
 
 class ArtykulViewSerializer(serializers.Serializer):
     artykul_id = serializers.IntegerField(read_only=True)
     tresc = serializers.CharField(required=True,allow_blank=False)
     nazwa_kursu = serializers.CharField(max_length=50,required=True)
     id = serializers.IntegerField()
+    nr_artykulu = serializers.CharField(max_length=10,read_only=True,allow_blank=True)
 
 class PytanieSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)

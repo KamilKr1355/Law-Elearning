@@ -1,11 +1,12 @@
 import random
 from ..repositories.quiz_repository import QuizRepository
 from ..mappers.quiz_mapper import map_question_row, map_answer_row
+from kursy.services.odpowiedzi_service import OdpowiedziService
+from kursy.api.serializers import OdpowiedziSerializer
 
 class QuizService:
-
-    def start_quiz(self, kurs_nazwa, count):
-        rows = QuizRepository.get_questions_for_course(kurs_nazwa)
+    def start_quiz(self, kurs_nazwa, count, rozdzialy=None):
+        rows = QuizRepository.get_questions_for_course(kurs_nazwa,rozdzialy)
         if not rows:
             return None
 
@@ -25,17 +26,24 @@ class QuizService:
         return quiz
 
     def check_quiz(self, odpowiedzi):
+        service = OdpowiedziService()
         poprawne = QuizRepository.get_all_correct_answers()
 
         wynik = 0
         poprawne_ids = []
+        wybrane = []
 
         for odp in odpowiedzi:
             pyt_id = odp["pytanie_id"]
             wybrana = odp["wybrana_opcja"]
+            opcje = service.get_pytanie_id(pyt_id)
+            wybrane.append({
+            "odpowiedzi": opcje, 
+            "wybrana_opcja": wybrana
+        })
 
             if (wybrana, pyt_id) in poprawne:
                 wynik += 1
                 poprawne_ids.append(pyt_id)
 
-        return wynik, poprawne_ids
+        return wynik, poprawne_ids, wybrane

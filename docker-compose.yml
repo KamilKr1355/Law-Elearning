@@ -20,7 +20,16 @@ services:
     container_name: django_backend
     ports:
       - "8001:8000"
-    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 elearning_prawo.wsgi:application"
+    command:
+      sh -c "
+        python manage.py migrate &&
+        gunicorn elearning_prawo.wsgi:application
+          --bind 0.0.0.0:8000
+          --access-logfile -
+          --error-logfile -
+          --log-level info
+          --timeout 120
+      "
     
     volumes:
       - ./backend:/app  # Mapowanie katalogu backendu do /app w kontenerze

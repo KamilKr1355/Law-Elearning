@@ -39,6 +39,16 @@ class NotatkaSerializer(serializers.Serializer):
     artykul_id = serializers.IntegerField()
     data_zapisu = serializers.DateTimeField(read_only=True)
 
+class NotatkaSerializer2(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    tresc = serializers.CharField()
+    uzytkownik_id = serializers.IntegerField(read_only=True)
+    artykul_id = serializers.IntegerField()
+    data_zapisu = serializers.DateTimeField(read_only=True)
+    kurs_id = serializers.IntegerField(read_only=True)
+    nazwa_kursu = serializers.CharField(read_only=True)
+    nr_artykulu = serializers.CharField(read_only=True)
+
 class NotatkaPostSerializer(serializers.Serializer):
     tresc = serializers.CharField()
     artykul_id = serializers.IntegerField()
@@ -101,5 +111,6 @@ class ProgressKursSummarySerializer(serializers.Serializer):
 
 class PytanieTrybNaukiSerializer(serializers.Serializer):
     pytanie_id = serializers.IntegerField()
+    artykul_id = serializers.IntegerField()
     tresc = serializers.CharField()
     status_uzytkownika = serializers.CharField(max_length=2) 
