@@ -39,3 +39,8 @@ class ProgressPytanService:
         
         wiersz = ProgressPytanRepository.pobierz_po_id(zaktualizowany_id)
         return map_progress_pytan_row(wiersz)
+    
+    def usun_po_kurs_id(self,user_id, kurs_id):
+        if ProgressPytanRepository.usun_po_kurs_id(user_id,kurs_id):
+            return True
+        return False

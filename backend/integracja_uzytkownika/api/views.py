@@ -914,6 +914,37 @@ class ProgressPytanAPIView(APIView):
             "podsumowanie": ProgressKursSummarySerializer(summary).data
         }, status=status.HTTP_200_OK)
     
+class UsunProgressPytanAPIView(APIView):
+    """
+    USUN POSTĘP PYTAŃ (PROGRESS BAR)
+    
+    Usuwa szczegółowy postęp użytkownika w kursie 
+    """
+
+    permission_classes = [IsAuthenticated]
+    service = ProgressPytanService()
+    
+    @swagger_auto_schema(
+        operation_description="USUWANIE: Usuwa progress pytna po kurs ID.",
+        responses={
+            status.HTTP_200_OK: openapi.Response(description="Progress usunięty pomyślnie."),
+            status.HTTP_404_NOT_FOUND: openapi.Response(description="Nie udalo sie usunac."),
+        }
+    )
+    def delete(self, request, kurs_id):
+        deleted = self.service.usun_po_kurs_id(request.user.id, kurs_id)
+        
+        if deleted:
+            return Response(
+                {"message": "Progress usunięty"}, 
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"error": "Nie znaleziono zapisu"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
 class AktualizujStatusPytaniaAPIView(APIView):
     """
     AKTUALIZACJA STATUSU PYTANIA DLA UŻYTKOWNIKA

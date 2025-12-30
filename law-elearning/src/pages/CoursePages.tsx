@@ -75,24 +75,38 @@ export const KursDetail = () => {
   const [progressData, setProgressData] = useState<KursProgress | null>(null);
   const [artykulDnia, setArtykulDnia] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const loadProgress = async () => {
+    if (!id) return;
+    try {
+        const p = await aktywnoscService.getPostepKursu(id);
+        if (p) setProgressData(p);
+    } catch (e) {
+        console.warn("Nie udało się pobrać postępu");
+    }
+  };
 
   useEffect(() => {
     if (id) {
       const loadData = async () => {
         setLoading(true);
         try {
-          const [k, r, p, ad] = await Promise.all([
+          const [k, r, ad] = await Promise.all([
             kursService.getOne(id),
             kursService.getRozdzialy(id),
-            aktywnoscService.getPostepKursu(id).catch(() => null),
             kursService.getArtykulDnia(id).catch(() => null)
           ]);
           
           const courseData = Array.isArray(k) ? k[0] : k;
           setKurs(courseData);
           setRozdzialy(r);
-          if (p) setProgressData(p);
           if (ad) setArtykulDnia(ad);
+
+          // Pobierz postęp osobno
+          await loadProgress();
 
           const artsMapping: { [key: number]: ArtykulView[] } = {};
           
@@ -125,11 +139,37 @@ export const KursDetail = () => {
     }));
   };
 
+  const handleResetProgress = async () => {
+      if (!id) return;
+      setResetting(true);
+      try {
+          await aktywnoscService.deletePostepKursu(id);
+          // Po resecie odświeżamy dane postępu
+          setProgressData({ podsumowanie: { progress_percentage: 0 } });
+          // Opcjonalnie przeładowujemy dane, aby odświeżyć statusy pytań itp.
+          window.location.reload();
+      } catch (e) {
+          alert("Błąd podczas resetowania postępu.");
+      } finally {
+          setResetting(false);
+          setResetModalOpen(false);
+      }
+  };
+
   if (loading) return <Spinner />;
   if (!kurs) return <div className="text-center p-10">Nie znaleziono kursu.</div>;
 
   return (
     <div className="space-y-8">
+      <ConfirmationModal 
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        onConfirm={handleResetProgress}
+        title="Resetowanie postępu"
+        message="Czy na pewno chcesz zresetować cały postęp w tym kursie? Wszystkie Twoje odpowiedzi i statusy przerobionych materiałów zostaną wyzerowane. Tej operacji nie można cofnąć."
+        confirmLabel={resetting ? "Resetowanie..." : "Zresetuj postęp"}
+      />
+
       <div>
         <div className="flex justify-between items-end mb-4">
             <div>
@@ -137,16 +177,23 @@ export const KursDetail = () => {
                 <p className="mt-2 text-gray-600">Rozwiń rozdział, aby zobaczyć listę artykułów.</p>
             </div>
             {progressData && (
-                 <div className="text-right">
-                     <span className="text-sm font-bold text-indigo-600">{progressData.podsumowanie.progress_percentage.toFixed(0)}% Ukończono</span>
+                 <div className="text-right flex flex-col items-end">
+                     <span className="text-sm font-bold text-indigo-600 mb-1">{progressData.podsumowanie.progress_percentage.toFixed(0)}% Ukończono</span>
+                     <button 
+                        onClick={() => setResetModalOpen(true)}
+                        className="text-[10px] text-red-400 hover:text-red-600 font-bold uppercase tracking-widest transition-colors flex items-center group"
+                     >
+                         <span className="mr-1 opacity-0 group-hover:opacity-100 transition-opacity">↺</span>
+                         Resetuj postęp
+                     </button>
                  </div>
             )}
         </div>
         
         {progressData && (
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 shadow-inner">
                 <div 
-                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" 
+                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
                     style={{ width: `${progressData.podsumowanie.progress_percentage}%` }}
                 ></div>
             </div>
