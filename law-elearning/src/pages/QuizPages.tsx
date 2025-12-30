@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-// Added missing Link to imports from react-router-dom
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
-import { quizService, kursService } from '../services/api';
-import type { QuizQuestion, Kurs, Rozdzial } from '../types';
+import { quizService, kursService, aktywnoscService } from '../services/api';
+import type { QuizQuestion, Kurs, Rozdzial, QuizResult, Odpowiedz } from '../types';
 import { Card, Button, Spinner, Badge } from '../components/UI';
 
 export const QuizStart = () => {
@@ -19,7 +17,8 @@ export const QuizStart = () => {
 
   useEffect(() => {
     kursService.getAll().then(data => {
-        setKursy(data);
+        const list = Array.isArray(data) ? data : [];
+        setKursy(list);
         if (initialKursId) {
             setSelectedKurs(initialKursId);
         }
@@ -29,7 +28,6 @@ export const QuizStart = () => {
   useEffect(() => {
       if (selectedKurs) {
           setLoadingRozdzialy(true);
-          // RESETOWANIE stanu rozdziałów przed nowym pobraniem
           setRozdzialy([]);
           setSelectedRozdzialy([]);
 
@@ -37,6 +35,7 @@ export const QuizStart = () => {
             .then(data => {
                 const safeData = Array.isArray(data) ? data : [];
                 setRozdzialy(safeData);
+                // Domyślnie zaznaczamy wszystkie rozdziały
                 setSelectedRozdzialy(safeData.map((r: any) => r.id));
             })
             .catch(err => {
@@ -80,7 +79,6 @@ export const QuizStart = () => {
         </div>
         
         <div className="space-y-6">
-            {/* UKRYWANIE wyboru kursu, jeśli kursId jest w URL */}
             {!initialKursId ? (
                 <div className="max-w-xs mx-auto">
                     <label className="block text-left text-sm font-bold mb-2 text-gray-700">1. Wybierz kurs</label>
@@ -190,7 +188,7 @@ export const QuizActive = () => {
         })
         .finally(() => setLoading(false));
     }
-  }, [kursNazwa, rozdzialy]);
+  }, [kursNazwa, rozdzialy, navigate]);
 
   const handleSelect = (questionId: number, answerId: number) => {
     setAnswers(prev => ({ ...prev, [questionId]: answerId }));
@@ -222,7 +220,19 @@ export const QuizActive = () => {
         kurs_id: parseInt(kursId),
         odpowiedzi: formattedAnswers
       });
-      navigate('/quiz/wynik', { state: { result, total: questions.length, kursId } });
+
+      // AKTUALIZACJA STATUSÓW PYTAŃ (OP / OZ)
+      try {
+          await Promise.all(formattedAnswers.map(ans => {
+              const isCorrect = result.poprawne.includes(ans.pytanie_id);
+              return aktywnoscService.updateStatusPytania(ans.pytanie_id, isCorrect ? 'OP' : 'OZ');
+          }));
+      } catch (statusError) {
+          console.warn("Błąd podczas aktualizacji statusów pytań", statusError);
+      }
+
+      // Przekazujemy listę pytań do raportu review
+      navigate('/quiz/wynik', { state: { result, total: questions.length, kursId, questions } });
     } catch (e) {
       console.error(e);
       alert('Błąd podczas wysyłania odpowiedzi.');
@@ -255,8 +265,8 @@ export const QuizActive = () => {
         <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
       </div>
 
-      <Card className="min-h-[300px] flex flex-col justify-center border-indigo-50">
-        <h3 className="text-2xl font-medium text-gray-900 mb-8">{currentQ.tresc}</h3>
+      <Card className="min-h-[300px] flex flex-col justify-center border-indigo-50 shadow-md">
+        <h3 className="text-2xl font-medium text-gray-900 mb-8 leading-tight">{currentQ.tresc}</h3>
         <div className="space-y-3">
           {currentQ.odpowiedzi.map((odp) => (
             <div 
@@ -264,8 +274,8 @@ export const QuizActive = () => {
               onClick={() => handleSelect(currentQ.id, odp.id)}
               className={`p-4 rounded-lg border cursor-pointer transition-all flex items-center ${
                 answers[currentQ.id] === odp.id 
-                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' 
-                  : 'border-gray-200 hover:bg-gray-50'
+                  ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-600' 
+                  : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
               }`}
             >
               <div className={`w-5 h-5 rounded-full border mr-4 flex items-center justify-center ${
@@ -273,7 +283,7 @@ export const QuizActive = () => {
               }`}>
                 {answers[currentQ.id] === odp.id && <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>}
               </div>
-              <span className="text-gray-800">{odp.tresc}</span>
+              <span className="text-gray-800 font-medium">{odp.tresc}</span>
             </div>
           ))}
         </div>
@@ -302,48 +312,98 @@ export const QuizSummary = () => {
     return <div className="text-center mt-10">Brak wyników. <Button onClick={() => navigate('/quiz')}>Wróć</Button></div>;
   }
 
-  const { result, total, kursId } = locState;
+  const { result, total, kursId, questions } = locState as { result: QuizResult, total: number, kursId: string, questions: QuizQuestion[] };
   const percentage = Math.round(result.wynik);
 
   return (
-    <div className="max-w-xl mx-auto py-10 text-center">
-      <Card>
+    <div className="max-w-4xl mx-auto py-10 space-y-10">
+      <Card className="text-center p-10 shadow-xl border-indigo-50">
         <div className="mb-6">
           {percentage >= 50 ? (
-            <div className="text-6xl mb-4">🎉</div>
+            <div className="text-6xl mb-4 animate-bounce">🎉</div>
           ) : (
             <div className="text-6xl mb-4">📚</div>
           )}
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {percentage >= 50 ? 'Gratulacje! Zdałeś.' : 'Niestety, musisz jeszcze poćwiczyć.'}
           </h1>
-          <p className="text-gray-500">Twój wynik egzaminu</p>
+          <p className="text-gray-500 font-medium">Twój wynik egzaminu</p>
         </div>
 
         <div className="flex justify-center items-center mb-8">
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center text-3xl font-bold border-8 ${
+          <div className={`w-32 h-32 rounded-full flex items-center justify-center text-3xl font-black border-8 ${
             percentage >= 50 ? 'border-green-500 text-green-600' : 'border-red-500 text-red-600'
           }`}>
             {percentage}%
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8 bg-gray-50 p-4 rounded-xl">
-          <div className="text-center">
-            <p className="text-xs text-gray-500 uppercase font-bold">Punkty</p>
-            <p className="text-xl font-bold text-gray-800">{result.punkty} / {total}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-500 uppercase font-bold">Poprawne</p>
-            <p className="text-xl font-bold text-gray-800">{result.poprawne.length}</p>
-          </div>
+        <div className="max-w-xs mx-auto mb-8 bg-gray-50 p-4 rounded-2xl border border-gray-100 shadow-inner">
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Punkty</p>
+            <p className="text-3xl font-black text-gray-800">{result.punkty} / {total}</p>
         </div>
 
-        <div className="space-y-3">
-          <Button className="w-full" onClick={() => navigate(`/quiz`)}>Rozwiąż kolejny Quiz</Button>
-          <Button variant="secondary" className="w-full" onClick={() => navigate(`/kursy/${kursId}`)}>Wróć do Kursu</Button>
+        <div className="flex flex-col md:flex-row gap-3">
+          <Button className="flex-1" onClick={() => navigate(`/quiz`)}>Rozwiąż kolejny Quiz</Button>
+          <Button variant="secondary" className="flex-1" onClick={() => navigate(`/kursy/${kursId}`)}>Wróć do Kursu</Button>
         </div>
       </Card>
+
+      <div className="space-y-6">
+          <h2 className="text-2xl font-black text-gray-800 border-l-4 border-indigo-600 pl-4">Przegląd odpowiedzi</h2>
+          {result.wybrane.map((item, idx) => {
+              const options = item.odpowiedzi || item.opcje_pytania || [];
+              const questionIdInItem = options[0]?.pytanie_id;
+              
+              const originalQuestion = questions?.find(q => q.id === questionIdInItem);
+              const questionText = originalQuestion?.tresc || `Pytanie #${questionIdInItem}`;
+              
+              const isUserCorrect = result.poprawne.includes(questionIdInItem);
+
+              return (
+                  <Card key={idx} className={`border-l-4 transition-all shadow-sm ${isUserCorrect ? 'border-l-green-500 bg-green-50/10' : 'border-l-red-500 bg-red-50/10'}`}>
+                      <div className="flex justify-between items-start mb-4">
+                          <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Pytanie {idx + 1}</span>
+                          <Badge color={isUserCorrect ? 'green' : 'red'}>{isUserCorrect ? 'DOBRZE' : 'BŁĄD'}</Badge>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-6 leading-tight">{questionText}</h3>
+                      
+                      <div className="space-y-3">
+                          {options.map((odp: Odpowiedz) => {
+                              const isThisSelected = Number(odp.id) === Number(item.wybrana_opcja);
+                              const isThisCorrect = odp.poprawna === true;
+                              
+                              let statusClass = "p-3 rounded-xl border text-sm flex justify-between items-center transition-all ";
+                              
+                              if (isThisSelected) {
+                                  statusClass += isThisCorrect 
+                                      ? "bg-green-100 border-green-500 text-green-800 font-bold shadow-md scale-[1.01]" 
+                                      : "bg-red-100 border-red-500 text-red-800 font-bold shadow-md scale-[1.01]";
+                              } else if (isThisCorrect) {
+                                  statusClass += "bg-green-50 border-green-200 text-green-700 italic border-dashed";
+                              } else {
+                                  statusClass += "bg-white border-gray-100 opacity-60";
+                              }
+
+                              return (
+                                  <div key={odp.id} className={statusClass}>
+                                      <span className="pr-4">{odp.tresc}</span>
+                                      <div className="flex items-center space-x-2 flex-shrink-0">
+                                        {isThisSelected && (
+                                            <span className="text-[9px] bg-white/80 px-2 py-0.5 rounded-full uppercase font-black text-gray-600 border border-gray-200 whitespace-nowrap shadow-sm">Twój wybór</span>
+                                        )}
+                                        {isThisCorrect && (
+                                            <span className="text-[9px] bg-green-500 text-white px-2 py-0.5 rounded-full uppercase font-black shadow-sm whitespace-nowrap">Poprawna</span>
+                                        )}
+                                      </div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  </Card>
+              );
+          })}
+      </div>
     </div>
   );
 };

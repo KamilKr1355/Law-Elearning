@@ -13,7 +13,7 @@ class TrybNaukiService:
         pytania_poprawne = []     
 
         for p in wszystkie_pytania:
-            if p['status_uzytkownika'] in ['NW', 'W', 'OZ']:
+            if p['status_uzytkownika'] in ['NW','OZ']:
                 pytania_do_powtorzenia.append(p)
             else:
                 pytania_poprawne.append(p)

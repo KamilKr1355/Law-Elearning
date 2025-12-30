@@ -52,6 +52,21 @@ export const StudyMode = () => {
             setCorrectAnswer("Błąd danych (brak ID pytania)");
             return;
         }
+
+        // Automatyczna zmiana statusu NW -> W przy samym wyświetleniu karty (opcjonalnie)
+        // Jeśli użytkownik chce, aby status zmieniały TYLKO przyciski, można to usunąć.
+        if (q.status === 'NW') {
+            try {
+                await aktywnoscService.updateStatusPytania(questionId, 'W');
+                setQuestions(prev => {
+                    const copy = [...prev];
+                    copy[currentIndex] = { ...copy[currentIndex], status: 'W' };
+                    return copy;
+                });
+            } catch (e) {
+                console.warn("Status update failed", e);
+            }
+        }
         
         try {
             const answers: Odpowiedz[] = await contentAdminService.getOdpowiedzi(questionId);
@@ -66,7 +81,7 @@ export const StudyMode = () => {
     if (questions.length > 0 && !finished) {
         fetchAnswer();
     }
-  }, [currentIndex, questions, finished]);
+  }, [currentIndex, questions.length, finished]);
 
   const handleResponse = async (known: boolean) => {
     const currentQ = questions[currentIndex];
@@ -74,12 +89,14 @@ export const StudyMode = () => {
     
     if (questionId) {
         try {
-            await aktywnoscService.updatePostepNauki({
-                pytanie_id: questionId,
-                is_correct: known
-            });
+            await aktywnoscService.updateStatusPytania(questionId, known ? 'W' : 'NW');
+
+//            await aktywnoscService.updatePostepNauki({
+  //              pytanie_id: questionId,
+    //            is_correct: known
+      //      });
         } catch (e) {
-            console.error("Failed to update stats", e);
+            console.error("Failed to update status/stats", e);
         }
     }
 

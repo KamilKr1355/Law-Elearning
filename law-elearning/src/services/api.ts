@@ -7,7 +7,6 @@ import type {
   KursProgress, StatystykiPytania, KursDni, LeaderboardEntry
 } from '../types';
 
-// Fix: Use type casting to any for import.meta to avoid "Property 'env' does not exist on type 'ImportMeta'" error in some TS environments
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8001/api';
 const api = axios.create({
   baseURL: API_URL,
@@ -203,6 +202,10 @@ export const aktywnoscService = {
     const response = await api.post('/aktywnosc/moje-notatki/', data);
     return response.data;
   },
+  updateNotatka: async (id: number, tresc: string) => {
+    const response = await api.put(`/aktywnosc/moje-notatki/${id}/`, { tresc });
+    return response.data;
+  },
   deleteNotatka: async (id: number) => {
     const response = await api.delete(`/aktywnosc/moje-notatki/${id}/`);
     return response.data;
@@ -240,6 +243,13 @@ export const aktywnoscService = {
   },
   updatePostepNauki: async (data: { pytanie_id: number, is_correct: boolean }) => {
     const response = await api.post('/statystyki/update/', data);
+    return response.data;
+  },
+  updateStatusPytania: async (pytanieId: number, status: string) => {
+    const response = await api.post('/aktywnosc/progress/pytanie/aktualizuj/', { 
+        pytanie_id: pytanieId, 
+        status: status 
+    });
     return response.data;
   },
   getPostepKursu: async (kursId: string): Promise<KursProgress> => {

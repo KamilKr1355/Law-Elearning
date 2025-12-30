@@ -41,6 +41,8 @@ export interface Pytanie {
   id: number;
   tresc: string;
   artykul_id: number;
+  // Added status property to track whether a question was seen/visited (NW/W)
+  status?: string;
   odpowiedzi?: Odpowiedz[]; // Optional for frontend UI composition
 }
 
@@ -57,6 +59,8 @@ export interface Notatka {
   uzytkownik_id: number;
   artykul_id: number;
   data_zapisu: string;
+  nazwa_kursu?: string;
+  nr_artykulu?: string;
 }
 
 export interface ZapisArtykulu {
@@ -75,27 +79,27 @@ export interface Komentarz {
   data_zapisu: string;
 }
 
-export interface OcenaArtykulu {
-  id: number;
-  ocena: number;
-  artykul_id: number;
-}
-
 export interface OcenaArtykuluCombined {
   artykul_id: number;
   srednia_ocena: number;
-  moja_ocena?: OcenaArtykulu | null;
+  moja_ocena?: { id: number; ocena: number } | null;
 }
 
 export interface QuizQuestion {
   id: number;
   tresc: string;
+  artykul_id?: number; 
   odpowiedzi: { id: number; tresc: string }[];
 }
 
 export interface QuizResult {
   punkty: number;
-  poprawne: number[];
+  poprawne: number[]; // Lista ID pytań, które zostały zaliczone
+  wybrane: {
+    odpowiedzi?: Odpowiedz[]; // Niektóre wersje backendu
+    opcje_pytania?: Odpowiedz[]; // Swagger version
+    wybrana_opcja: number;   // ID odpowiedzi wybranej przez usera
+  }[];
   wynik: number;
 }
 
@@ -116,10 +120,7 @@ export interface StatystykiPytania {
 }
 
 export interface KursProgress {
-  lista_postepu: any[];
   podsumowanie: {
-    total_questions: number;
-    completed_count: number;
     progress_percentage: number;
   }
 }

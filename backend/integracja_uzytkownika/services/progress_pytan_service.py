@@ -15,11 +15,18 @@ class ProgressPytanService:
 
     def sprawdz_czy_odpowiedziano(self, uzytkownik_id, pytanie_id):
         status = ProgressPytanRepository.pobierz_status_uzytkownika(uzytkownik_id, pytanie_id)
-        return status in ['OP', 'OZ']
+        return status in ['OP','OZ']
 
-    def aktualizuj_postep(self, uzytkownik_id, pytanie_id, is_correct):
-        status = ProgressPytan.Status.ODP_POPR if is_correct else ProgressPytan.Status.ODP_ZLA
-            
+    def aktualizuj_postep(self, uzytkownik_id, pytanie_id, state):
+        if state == "OP":
+            status = ProgressPytan.Status.ODP_POPR 
+        elif state == "OZ":
+            status = ProgressPytan.Status.ODP_ZLA
+        elif state == "W":
+            status = ProgressPytan.Status.WYSWIETLONE
+        elif state == "NW":
+            status = ProgressPytan.Status.NIEWYSWIETLONE
+
         zaktualizowany_id = ProgressPytanRepository.utworz_lub_aktualizuj(uzytkownik_id, pytanie_id, status)
         
         wiersz = ProgressPytanRepository.pobierz_po_id(zaktualizowany_id)
