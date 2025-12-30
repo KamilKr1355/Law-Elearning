@@ -98,7 +98,12 @@ class StatystykiPytaniaEdytujAPIView(APIView):
         uzytkownik_id = request.user.id
         
         progress_service = ProgressPytanService()
-        progress_service.aktualizuj_postep(uzytkownik_id, pytanie_id, is_correct)
+        if is_correct:
+            state = "OP"
+        else:
+            state = "OZ"
+
+        progress_service.aktualizuj_postep(uzytkownik_id, pytanie_id, state)
         
         stats_service = StatystykiPytaniaService()
         statystyki = stats_service.pobierz_statystyki(pytanie_id)

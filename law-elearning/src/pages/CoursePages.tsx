@@ -448,7 +448,23 @@ export const ArtykulReader = () => {
       setExpandedQuestions(prev => ({ ...prev, [qId]: !isExpanded }));
 
       const qIndex = questions.findIndex(q => q.id === qId);
-      if (!isExpanded && qIndex !== -1 && !questions[qIndex].odpowiedzi) {
+      if (qIndex === -1) return;
+
+      // ZMIANA STATUSU NW -> W
+      if (!isExpanded && questions[qIndex].status === 'NW') {
+          try {
+              await aktywnoscService.updateStatusPytania(qId, 'W');
+              setQuestions(prev => {
+                  const copy = [...prev];
+                  copy[qIndex] = { ...copy[qIndex], status: 'W' };
+                  return copy;
+              });
+          } catch (e) {
+              console.warn("Nie udało się zaktualizować statusu", e);
+          }
+      }
+
+      if (!isExpanded && !questions[qIndex].odpowiedzi) {
           try {
               const answers = await contentAdminService.getOdpowiedzi(qId);
               setQuestions(prev => {
@@ -468,15 +484,23 @@ export const ArtykulReader = () => {
       setSelectedAnswers(prev => ({ ...prev, [qId]: ansId }));
 
       try {
+          // 1. Rejestracja konkretnej odpowiedzi dla statystyk globalnych
           await aktywnoscService.updatePostepNauki({
               pytanie_id: qId,
               is_correct: isCorrect
           });
+
+          // 2. AKTUALIZACJA STATUSU POSTĘPU (OP / OZ)
+          // Jeśli odpowiedź jest poprawna, ustawiamy status OP, jeśli błędna OZ
+          await aktywnoscService.updateStatusPytania(qId, isCorrect ? 'OP' : 'OZ');
           
+          // 3. Pobranie świeżych statystyk globalnych do wyświetlenia na pasku
           const stats = await wynikiService.getStats(qId);
-          setQuestionStats(prev => ({ ...prev, [qId]: stats }));
+          if (stats) {
+              setQuestionStats(prev => ({ ...prev, [qId]: stats }));
+          }
       } catch (e) {
-          console.error(e);
+          console.error("Błąd podczas aktualizacji statystyk po odpowiedzi:", e);
       }
   };
 
@@ -514,7 +538,7 @@ export const ArtykulReader = () => {
 
       <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          {/* Nawigacja górna - JEDYNA PARA PRZYCISKÓW */}
+          {/* Nawigacja górna */}
           <div className="flex justify-between items-center mb-4 px-2">
               <Button 
                 variant="secondary" 
@@ -583,6 +607,16 @@ export const ArtykulReader = () => {
                           const selectedAnsId = selectedAnswers[q.id];
                           const stats = questionStats[q.id];
 
+                          // Bezpieczne wyliczanie procentów
+                          let rawProcent = "0";
+                          if (stats) {
+                              // Obsługa różnych nazw pól (procent_poprawnych ze Swaggera lub fallback na procent)
+                              const val = stats.procent_poprawnych || (stats as any).procent;
+                              if (val !== undefined && val !== null) {
+                                  rawProcent = parseFloat(val.toString()).toFixed(0);
+                              }
+                          }
+
                           return (
                               <div key={q.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all shadow-sm hover:border-indigo-200">
                                   <button 
@@ -634,9 +668,9 @@ export const ArtykulReader = () => {
                                               </div>
                                           )}
                                           
-                                          {selectedAnsId && stats && (
+                                          {selectedAnsId && (
                                               <div className="mt-4 text-[10px] text-center text-gray-400 bg-gray-50 p-2 rounded-lg border border-dashed">
-                                                  ŚREDNIA SKUTECZNOŚĆ SPOŁECZNOŚCI: <span className="font-black text-indigo-600">{parseFloat(stats.procent_poprawnych).toFixed(0)}%</span>
+                                                  ŚREDNIA SKUTECZNOŚĆ SPOŁECZNOŚCI: <span className="font-black text-indigo-600">{rawProcent}%</span>
                                               </div>
                                           )}
                                       </div>
@@ -753,8 +787,6 @@ export const ArtykulReader = () => {
                <Link to="/moje-notatki" className="text-xs text-amber-700 hover:text-amber-900 font-bold hover:underline">Przeglądaj wszystkie notatki &rarr;</Link>
              </div>
           </Card>
-          
-          {/* USUNIĘTO ZAKŁADKĘ INFORMACJE */}
         </div>
       </div>
     </>
