@@ -256,6 +256,10 @@ export const aktywnoscService = {
       const response = await api.get(`/aktywnosc/progress/kurs/${kursId}/`);
       return response.data;
   },
+  deletePostepKursu: async (kursId: string | number) => {
+    const response = await api.delete(`/aktywnosc/progress/usun/${kursId}/`);
+    return response.data;
+  },
   getZapisane: async () => {
     const response = await api.get('/aktywnosc/moje-zapisy/');
     return response.data;

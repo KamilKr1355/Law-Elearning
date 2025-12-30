@@ -73,6 +73,10 @@ urlpatterns = [
      views.AktualizujStatusPytaniaAPIView.as_view(), 
      name="aktualizuj-status-pytania"),
 
+     path('progress/usun/<int:kurs_id>/',
+          views.UsunProgressPytanAPIView.as_view(),
+          name='usun-progress'),
+
     #Tryb Nauki
      path('nauka/kurs/<int:kurs_id>/',
          views.TrybNaukiAPIView.as_view(),

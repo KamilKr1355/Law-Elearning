@@ -66,6 +66,14 @@ class ProgressPytanRepository:
             return cursor.fetchone()
         
     @staticmethod
+    def usun_po_kurs_id(user_id,kurs_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM integracja_uzytkownika_progresspytan pp USING (SELECT p.id FROM kursy_pytanie p INNER JOIN kursy_artykul a ON a.id = p.artykul_id INNER JOIN kursy_rozdzial r ON r.id = a.rozdzial_id WHERE r.kurs_id = %s) pom WHERE pp.uzytkownik_id = %s AND pom.id= pp.pytanie_id RETURNING pp.id;
+            """, [kurs_id,user_id])
+            return cursor.fetchall()
+        
+    @staticmethod
     def pobierz_podsumowanie_dla_kursu(uzytkownik_id, kurs_id):
         with connection.cursor() as cursor:
             cursor.execute("""
