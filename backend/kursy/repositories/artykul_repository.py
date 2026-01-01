@@ -23,7 +23,7 @@ class ArtykulRepository:
     def get_artykul_dnia(kurs_id):
         with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.kurs_id = 1 ORDER BY md5(a.id::text || current_date::text) LIMIT 1;",
+                    "SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.kurs_id = %s ORDER BY md5(a.id::text || current_date::text) LIMIT 1;",
                     [kurs_id]
                 )
                 return cursor.fetchone()
