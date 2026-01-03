@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
                 CREATE OR REPLACE FUNCTION aktualizuj_statystyki_po_progress()
                 RETURNS TRIGGER AS $$
                 BEGIN
-                    IF OLD.status = IN ('W','NW') AND NEW.status IN ('OP', 'OZ') THEN
+                    IF OLD.status IN ('W','NW') AND NEW.status IN ('OP', 'OZ') THEN
                         INSERT INTO statystyki_statystykipytania (pytanie_id, ilosc_odpowiedzi, poprawne_odpowiedzi)
                         VALUES (NEW.pytanie_id, 0, 0)
                         ON CONFLICT (pytanie_id) DO NOTHING;
