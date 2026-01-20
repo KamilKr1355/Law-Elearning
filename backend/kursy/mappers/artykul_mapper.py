@@ -21,9 +21,10 @@ def map_artykul_row2(row):
 def map_artykul_row3(row):
     return {
         "artykul_id": row[0], 
-        "tytul": row[1].strip(), 
-        "tresc": row[2], 
-        "nazwa_kursu": row[3], 
-        "kurs_id": row[4],
-        "nr_artykulu":row[5]
+        "rozdzial_id": row[1],
+        "tytul": row[2].strip(), 
+        "tresc": row[3], 
+        "nazwa_kursu": row[4], 
+        "kurs_id": row[5],
+        "nr_artykulu":row[6]
         }
