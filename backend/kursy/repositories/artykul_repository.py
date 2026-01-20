@@ -5,7 +5,7 @@ class ArtykulRepository:
     @staticmethod
     def get_all(kurs_id):
          with connection.cursor() as cursor:
-                cursor.execute("""SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v 
+                cursor.execute("""SELECT v.artykul_id,v.rozdzial_id, v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v 
                                 INNER JOIN kursy_artykul a ON a.id=v.artykul_id
                                 WHERE v.kurs_id = %s;""",[kurs_id])
                 return cursor.fetchall()

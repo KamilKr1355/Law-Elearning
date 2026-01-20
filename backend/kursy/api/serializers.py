@@ -32,6 +32,7 @@ class ArtykulRozdzialSerializer(serializers.Serializer):
 
 class ArtykulRozdzial2Serializer(serializers.Serializer):
     artykul_id = serializers.IntegerField(read_only=True)
+    rozdzial_id = serializers.IntegerField(read_only=True)
     tytul = serializers.CharField(required=True,allow_blank=False)
     tresc = serializers.CharField(required=True,allow_blank=False)
     nazwa_kursu = serializers.CharField(max_length=50,required=True)
