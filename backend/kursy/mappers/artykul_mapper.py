@@ -28,3 +28,14 @@ def map_artykul_row3(row):
         "kurs_id": row[5],
         "nr_artykulu":row[6]
         }
+
+def map_artykul_row4(row):
+    return {
+        "artykul_id": row[0], 
+        "tytul": row[1].strip(), 
+        "tresc": row[2], 
+        "nazwa_kursu": row[3], 
+        "kurs_id": row[4],
+        "nr_artykulu":row[5]
+        }
+
