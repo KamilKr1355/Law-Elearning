@@ -90,22 +90,7 @@ export const AdminDashboard = () => {
            )}
         </Card>
         
-        <Card className="border-none shadow-2xl">
-            <h3 className="font-black text-lg mb-6 uppercase tracking-widest text-indigo-900 border-b pb-4">Skróty systemowe</h3>
-            <div className="space-y-4">
-                <Link to="/admin/kursy" className="block p-5 bg-gray-50 rounded-2xl hover:bg-indigo-600 hover:text-white flex justify-between items-center transition-all duration-300 group shadow-sm">
-                    <span className="font-bold text-gray-700 group-hover:text-white">Dodaj nową wiedzę</span>
-                    <span className="bg-indigo-600 group-hover:bg-white group-hover:text-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black transition-colors">+</span>
-                </Link>
-                <Link to="/admin/users" className="block p-5 bg-gray-50 rounded-2xl hover:bg-indigo-600 hover:text-white flex justify-between items-center transition-all duration-300 group shadow-sm">
-                    <span className="font-bold text-gray-700 group-hover:text-white">Lista użytkowników</span>
-                    <span className="text-indigo-600 group-hover:text-white font-black text-2xl tracking-tighter">&rarr;</span>
-                </Link>
-                <div className="p-6 bg-amber-50 rounded-2xl text-xs font-bold text-amber-800 border-2 border-amber-100 leading-relaxed shadow-inner">
-                    💡 Każda zmiana w kursie (ID) jest natychmiast widoczna dla wszystkich zalogowanych studentów.
-                </div>
-            </div>
-        </Card>
+       
       </div>
     </div>
   );

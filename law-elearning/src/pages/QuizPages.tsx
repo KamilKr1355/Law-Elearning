@@ -151,7 +151,7 @@ export const QuizStart = () => {
           disabled={!selectedKurs || (rozdzialy.length > 0 && selectedRozdzialy.length === 0)} 
           className={`w-full mt-10 py-4 text-lg shadow-indigo-100 ${(!selectedKurs || (rozdzialy.length > 0 && selectedRozdzialy.length === 0)) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Rozpocznij Quiz 🚀
+          Rozpocznij Quiz
         </Button>
         
         {initialKursId && (
