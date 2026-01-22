@@ -8,7 +8,7 @@ frontend/ – React (budowany i serwowany przez Nginx)
 
 PostgreSQL – baza danych
 
-docker-compose – uruchamianie całego środowiska jednym poleceniem
+docker
 
 # Wymagania
    
@@ -49,11 +49,11 @@ docker-compose down
 # Migracje bazy danych
 docker-compose exec web python manage.py migrate
 
-#. Tworzenie superusera
+# Tworzenie superusera
 
 docker-compose exec web python manage.py createsuperuser
 
-#. Uruchamianie komend Django (np. scraping)
+# Uruchamianie komend Django (np. scraping)
 
 Każda komenda z management/commands:
 
@@ -67,13 +67,10 @@ docker-compose exec web python manage.py scrapuj_dane
 # Dostęp do aplikacji
 
 Frontend (React + Nginx):
-👉 http://localhost
+http://localhost
 
 Backend (Django API):
-👉 http://localhost:8000
-
-Admin Django:
-👉 http://localhost:8000/admin/
+http://localhost:8000
 
 
 
