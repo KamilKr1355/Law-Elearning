@@ -1,5 +1,5 @@
 from kursy.repositories.artykul_repository import ArtykulRepository
-from kursy.mappers.artykul_mapper import map_artykul_row, map_artykul_row4
+from kursy.mappers.artykul_mapper import map_artykul_row, map_artykul_row4, map_artykul_row5
 from kursy.mappers.artykul_mapper import map_artykul_row2
 from kursy.mappers.artykul_mapper import map_artykul_row3
 
@@ -19,7 +19,7 @@ class ArtykulService:
     
     def get_one_with_title(self, artykul_id):
         row = ArtykulRepository.get_by_id2(artykul_id)
-        return map_artykul_row4(row) if row else None
+        return map_artykul_row5(row) if row else None
 
     def get_by_rozdzial(self, rozdzial_id):
         rows = ArtykulRepository.get_by_rozdzial_id(rozdzial_id)

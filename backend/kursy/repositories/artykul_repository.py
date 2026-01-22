@@ -32,7 +32,7 @@ class ArtykulRepository:
     def get_by_id2(artykul_id):
         with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu FROM artykul_rozdzial_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id WHERE v.artykul_id=%s;",
+                    "SELECT v.artykul_id,v.tytul,v.tresc,v.nazwa_kursu,v.kurs_id,a.nr_artykulu, v.rozdzial_id as id, kr.nazwa_rozdzialu FROM artykul_rozdzial_view v INNER JOIN kursy_artykul a ON a.id=v.artykul_id INNER JOIN kursy_rozdzial kr ON v.rozdzial_id=kr.id WHERE v.artykul_id=%s;",
                     [artykul_id]
                 )
                 return cursor.fetchone()

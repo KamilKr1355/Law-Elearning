@@ -438,7 +438,7 @@ export const AdminArtykuly = () => {
                 {rozdzialy.length === 0 && <p className="text-red-500 text-[10px] mt-2 font-black uppercase tracking-widest">⚠️ Brak rozdziałów w tym kursie. Najpierw dodaj przynajmniej jeden rozdział.</p>}
               </div>
               <div>
-                <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Treść merytoryczna (HTML)</label>
+                <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Treść merytoryczna</label>
                 <textarea className="w-full p-6 border-2 border-gray-100 rounded-2xl h-64 font-mono text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={currentArt.tresc} onChange={(e) => setCurrentArt({...currentArt, tresc: e.target.value})} required />
               </div>
               <div className="flex space-x-3 pt-4 border-t">
