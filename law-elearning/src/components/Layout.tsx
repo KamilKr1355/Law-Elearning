@@ -64,7 +64,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </main>
       <footer className="bg-white border-t border-gray-200 py-8">
         <div className="container mx-auto text-center text-gray-500 text-sm">
-          <p className="mb-2">&copy; {new Date().getFullYear()} Law E-Learning Platform. Wszelkie prawa zastrzeżone.</p>
+          <p className="mb-2">&copy; {new Date().getFullYear()} Law E-Learning Platform.</p>
           <div className="space-x-4">
              <Link to="/kursy" className="hover:text-indigo-600">Kursy</Link>
              <Link to="/login" className="hover:text-indigo-600">Logowanie</Link>
