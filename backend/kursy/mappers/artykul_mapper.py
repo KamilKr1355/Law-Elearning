@@ -47,7 +47,7 @@ def map_artykul_row5(row):
         "nazwa_kursu": row[3], 
         "kurs_id": row[4],
         "nr_artykulu":row[5],
-        "id":row[6],
+        "rozdzial_id":row[6],
         "nazwa_rozdzialu":row[7]
         }
 
