@@ -1,4 +1,9 @@
 # Law-Elearning 
+Login admina: administrator
+haslo: admin1234
+
+Login usera: user1
+haslo: user1234
 
 Projekt składa się z:
 
