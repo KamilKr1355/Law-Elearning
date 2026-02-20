@@ -1,19 +1,9 @@
-# Law-Elearning 
+# Law-Elearning https://lawedu.onrender.com/ (Currently turned off)
 Login admina: administrator
 haslo: admin1234
 
 Login usera: user1
 haslo: user1234
-
-Projekt składa się z:
-
-backend/ – Django + Gunicorn
-
-frontend/ – React (budowany i serwowany przez Nginx)
-
-PostgreSQL – baza danych
-
-docker
 
 # Wymagania
    
